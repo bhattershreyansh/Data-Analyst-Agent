@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@clerk/react';
 import { useParams, Link } from 'react-router-dom';
 import { dashboardAPI } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, Download, Lock, Unlock } from 'lucide-react';
+import { Loader2, ArrowLeft, Download, Lock, Unlock, Database } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Plot from 'react-plotly.js';
 import toast from 'react-hot-toast';
@@ -12,6 +13,7 @@ import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { Header } from '@/components/Header';
+import { cn } from '@/lib/utils';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -63,9 +65,9 @@ function convertChartConfigToPlotlyData(chart: any): any[] {
         y: validYValues,
         type: 'bar',
         marker: {
-          color: '#3b82f6',
+          color: '#8b5cf6', // Primary Neon Purple
           line: {
-            color: '#2563eb',
+            color: '#a78bfa',
             width: 1
           }
         },
@@ -79,7 +81,7 @@ function convertChartConfigToPlotlyData(chart: any): any[] {
         values: validYValues,
         type: 'pie',
         marker: {
-          colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'],
+          colors: ['#8b5cf6', '#10b981', '#d946ef', '#0ea5e9', '#f59e0b', '#f43f5e', '#14b8a6'],
         },
         textinfo: 'label+percent',
         textposition: 'auto',
@@ -94,14 +96,14 @@ function convertChartConfigToPlotlyData(chart: any): any[] {
         type: 'scatter',
         mode: 'lines+markers',
         line: {
-          color: '#3b82f6',
+          color: '#10b981', // Accent Neon Emerald
           width: 3,
         },
         marker: {
-          color: '#3b82f6',
+          color: '#10b981',
           size: 8,
           line: {
-            color: '#2563eb',
+            color: '#34d399',
             width: 2
           }
         },
@@ -118,6 +120,7 @@ function convertChartConfigToPlotlyData(chart: any): any[] {
 }
 
 export default function DashboardView() {
+  const { getToken } = useAuth();
   const { id } = useParams<{ id: string }>();
   const [isLocked, setIsLocked] = useState(true);
   const [layouts, setLayouts] = useState<{ [key: string]: Layout[] }>({});
@@ -125,7 +128,8 @@ export default function DashboardView() {
   const { data: dashboard, isLoading: dashboardLoading, error: dashboardError } = useQuery({
     queryKey: ['dashboard', id],
     queryFn: async () => {
-      const response = await dashboardAPI.getDashboard(id!);
+      const token = await getToken();
+      const response = await dashboardAPI.getDashboard(id!, token);
       if (response.success) {
         return response.data;
       } else {
@@ -209,58 +213,72 @@ export default function DashboardView() {
   const defaultLayout = generateDefaultLayout(dashboard.charts?.length || 0);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background Glows */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
+
       <Header />
-      <div className="container mx-auto px-4 py-8">
+      
+      <div className="container mx-auto px-6 py-12 relative z-10 max-w-7xl">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-12"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-6 mb-10">
             <Link to="/dashboards">
-              <Button variant="ghost" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Dashboards
+              <Button variant="ghost" className="gap-2 font-bold hover:bg-white/5 pl-2 group">
+                <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+                Fleet View
               </Button>
             </Link>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-3">
               <Button
-                variant={isLocked ? "outline" : "default"}
+                variant={isLocked ? "ghost" : "default"}
                 onClick={toggleLock}
-                className="gap-2"
+                className={cn(
+                  "gap-2 font-bold px-6",
+                  isLocked ? "glass border-white/10 hover:bg-white/5" : "bg-primary text-white shadow-lg shadow-primary/20"
+                )}
               >
                 {isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-                {isLocked ? 'Unlock Layout' : 'Lock Layout'}
+                {isLocked ? 'Structure Locked' : 'Structure Interactive'}
               </Button>
               {!isLocked && (
-                <Button variant="outline" onClick={resetLayout} className="gap-2">
-                  Reset Layout
+                <Button variant="outline" onClick={resetLayout} className="gap-2 glass border-white/10 hover:bg-white/5 font-bold">
+                  Reset Architecture
                 </Button>
               )}
-              <Button variant="outline" onClick={handleExport} className="gap-2">
+              <Button variant="outline" onClick={handleExport} className="gap-2 glass border-white/10 hover:bg-white/5 font-bold">
                 <Download className="h-4 w-4" />
-                Export
+                Export Data
               </Button>
             </div>
           </div>
-          <h1 className="text-4xl font-bold mb-2">{dashboard.name}</h1>
-          {dashboard.description && (
-            <p className="text-muted-foreground text-lg">{dashboard.description}</p>
-          )}
-          {!isLocked && (
-            <p className="text-sm text-primary mt-2">
-              💡 Drag charts to move them, drag corners to resize
-            </p>
-          )}
+          
+          <div className="space-y-3">
+            <h1 className="text-6xl font-black text-white tracking-tighter leading-none">{dashboard.name}</h1>
+            {dashboard.description && (
+              <p className="text-xl text-muted-foreground/80 font-medium max-w-3xl leading-relaxed">
+                {dashboard.description}
+              </p>
+            )}
+            {!isLocked && (
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/30 mt-4 animate-pulse">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                Architectural Manipulation Active
+              </div>
+            )}
+          </div>
         </motion.div>
 
         {!dashboard.charts || dashboard.charts.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">📊</div>
-            <h2 className="text-2xl font-semibold mb-2">No charts in this dashboard</h2>
-            <p className="text-muted-foreground">
-              This dashboard doesn't contain any charts yet.
+          <div className="text-center py-32 glass-card rounded-[3rem] border-white/5">
+            <div className="text-8xl mb-6 opacity-20">🕳️</div>
+            <h2 className="text-3xl font-black text-white mb-2">Void Detected</h2>
+            <p className="text-muted-foreground/60 max-w-sm mx-auto">
+              This node has not yet been populated with any intelligence modules.
             </p>
           </div>
         ) : (
@@ -274,53 +292,55 @@ export default function DashboardView() {
             isDraggable={!isLocked}
             isResizable={!isLocked}
             draggableHandle=".drag-handle"
+            margin={[24, 24]}
           >
             {dashboard.charts.map((chart, index) => {
               const plotlyData = convertChartConfigToPlotlyData(chart);
 
               const layout = {
-                title: {
-                  text: '',
-                  font: {
-                    size: 18,
-                    color: '#1f2937'
-                  }
-                },
+                title: { text: '' },
                 autosize: true,
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)',
                 font: {
                   family: 'Inter, system-ui, sans-serif',
-                  color: '#1f2937',
+                  color: 'rgba(255,255,255,0.6)',
                 },
-                margin: { l: 50, r: 30, t: 10, b: 50 },
+                margin: { l: 40, r: 20, t: 20, b: 40 },
                 showlegend: true,
                 legend: {
                   orientation: 'h',
-                  y: -0.15
+                  y: -0.15,
+                  font: { color: 'rgba(255,255,255,0.4)', size: 10 }
                 },
                 xaxis: {
-                  gridcolor: '#e5e7eb',
+                  gridcolor: 'rgba(255,255,255,0.03)',
                   showgrid: true,
+                  linecolor: 'rgba(255,255,255,0.05)',
+                  tickfont: { size: 9 }
                 },
                 yaxis: {
-                  gridcolor: '#e5e7eb',
+                  gridcolor: 'rgba(255,255,255,0.03)',
                   showgrid: true,
+                  linecolor: 'rgba(255,255,255,0.05)',
+                  tickfont: { size: 9 }
                 },
               };
 
               return (
                 <div key={`chart-${index}`}>
-                  <Card className="p-4 bg-card h-full overflow-hidden">
-                    <div className={`mb-2 flex items-start justify-between ${!isLocked ? 'drag-handle cursor-move' : ''}`}>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-base mb-1">{chart.title}</h3>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
+                  <div className="glass-card rounded-3xl p-6 h-full overflow-hidden flex flex-col border-white/5 relative group">
+                    <div className={`mb-4 flex items-start justify-between ${!isLocked ? 'drag-handle cursor-move' : ''}`}>
+                      <div className="flex-1 min-w-0 pr-8">
+                        <h3 className="font-bold text-white text-lg mb-1 truncate group-hover:text-primary transition-colors">
+                          {chart.title}
+                        </h3>
+                        <p className="text-[10px] text-muted-foreground/40 font-bold uppercase tracking-widest line-clamp-1">
                           {chart.question}
                         </p>
                       </div>
                       {!isLocked && (
-                        <div className="text-muted-foreground ml-2">
+                        <div className="text-primary/40 group-hover:text-primary transition-colors">
                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M9 3C9 2.44772 8.55228 2 8 2C7.44772 2 7 2.44772 7 3V21C7 21.5523 7.44772 22 8 22C8.55228 22 9 21.5523 9 21V3Z" />
                             <path d="M17 3C17 2.44772 16.5523 2 16 2C15.4477 2 15 2.44772 15 3V21C15 21.5523 15.4477 22 16 22C16.5523 22 17 21.5523 17 21V3Z" />
@@ -330,26 +350,33 @@ export default function DashboardView() {
                     </div>
 
                     {plotlyData.length > 0 ? (
-                      <div className="w-full h-[calc(100%-60px)]">
+                      <div className="flex-1 w-full min-h-0">
                         <Plot
                           data={plotlyData}
                           layout={layout}
                           config={{
                             responsive: true,
-                            displayModeBar: true,
+                            displayModeBar: false,
                             displaylogo: false,
-                            modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
                           }}
                           style={{ width: '100%', height: '100%' }}
                           useResizeHandler
                         />
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
-                        <p>Chart data not available</p>
+                      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/20 space-y-2">
+                        <Database className="h-8 w-8" />
+                        <p className="text-[10px] font-black uppercase tracking-tighter">Null Data State</p>
                       </div>
                     )}
-                  </Card>
+                    
+                    {/* Corner accent */}
+                    <div className="absolute bottom-0 right-0 w-8 h-8 opacity-[0.03] pointer-events-none">
+                      <svg viewBox="0 0 24 24" className="w-full h-full fill-white">
+                        <path d="M24 24H0V22H22V0H24V24Z" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               );
             })}

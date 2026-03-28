@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth, useUser } from '@clerk/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatInterface, Message } from '@/components/ChatInterface';
 import { ChartDisplay } from '@/components/ChartDisplay';
@@ -7,7 +8,7 @@ import { CreateDashboardDialog } from '@/components/CreateDashboardDialog';
 import { SmartQuestions } from '@/components/SmartQuestions';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { QueryResponse, SavedChart, queryAPI } from '@/lib/api';
+import { QueryResponse, SavedChart, queryAPI, modeAPI } from '@/lib/api';
 import { PlusCircle, Sparkles, Loader2, Database, LayoutDashboard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { v4 as uuidv4 } from 'uuid';
@@ -15,6 +16,9 @@ import toast from 'react-hot-toast';
 import { Header } from '@/components/Header';
 
 export default function Analytics() {
+  const { getToken } = useAuth();
+  const { user } = useUser();
+  const userId = user?.id;
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,33 +28,49 @@ export default function Analytics() {
   const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const [activeSourceName, setActiveSourceName] = useState<string>("");
 
-  // Smart Question Popup State
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupLoading, setPopupLoading] = useState(false);
   const [popupQuestion, setPopupQuestion] = useState("");
   const [popupResult, setPopupResult] = useState<QueryResponse | null>(null);
 
+  // Insight Engine toggle
+  const [insightsEnabled, setInsightsEnabled] = useState(false);
+
+  // ── RBAC: clear all in-memory state when the signed-in user changes ──
+  // Without this, a second user logging in on the same browser tab inherits
+  // the previous user's entire chat history and active source.
+  useEffect(() => {
+    setMessages([]);
+    setActiveSourceId(null);
+    setActiveSourceName("");
+  }, [userId]);
+
   // Fetch active data source on mount and periodically
   useEffect(() => {
     const fetchActiveSource = async () => {
       try {
-        const response = await fetch("http://localhost:8000/mode/status");
-        if (response.ok) {
-          const data = await response.json();
-          if (data.active_source) {
-            setActiveSourceId(data.active_source.source_id);
-            setActiveSourceName(data.active_source.name);
-          }
+        const token = await getToken();
+        if (!token) return;
+        
+        const response = await modeAPI.getStatus(token);
+        if (response.success && response.data.active_source) {
+          const sourceId = response.data.active_source.source_id;
+          setActiveSourceId(sourceId);
+          setActiveSourceName(response.data.active_source.name);
+          // Key by userId so different accounts never share active_source_id
+          if (userId) localStorage.setItem(`active_source_id_${userId}`, sourceId);
         }
       } catch (error) {
         console.error("Failed to fetch active source:", error);
       }
     };
 
-    fetchActiveSource();
-    const interval = setInterval(fetchActiveSource, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    if (userId) {
+      fetchActiveSource();
+      const interval = setInterval(fetchActiveSource, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [userId]);
 
   const handleSendMessage = async (text: string) => {
     // Add user message
@@ -65,7 +85,8 @@ export default function Analytics() {
     setIsLoading(true);
 
     try {
-      const response = await queryAPI.sendQuery({ question: text, limit: 10 });
+      const token = await getToken();
+      const response = await queryAPI.sendQuery({ question: text, limit: 10, generate_insights: insightsEnabled }, token);
 
       if (response.data.success) {
         const assistantMsg: Message = {
@@ -106,7 +127,8 @@ export default function Analytics() {
     setPopupResult(null);
 
     try {
-      const response = await queryAPI.sendQuery({ question, limit: 10 });
+      const token = await getToken();
+      const response = await queryAPI.sendQuery({ question, limit: 10 }, token);
       if (response.data.success) {
         setPopupResult(response.data);
       } else {
@@ -135,7 +157,8 @@ export default function Analytics() {
 
   const handleSaveChart = async (chart: SavedChart, messageId?: string) => {
     try {
-      const response = await queryAPI.saveChart(chart);
+      const token = await getToken();
+      const response = await queryAPI.saveChart(chart, token);
       if (response.success) {
         toast.success("Chart saved successfully");
         queryClient.invalidateQueries({ queryKey: ['saved-charts'] });
@@ -158,7 +181,8 @@ export default function Analytics() {
 
   const handleDeleteChart = async (chartId: string) => {
     try {
-      const response = await queryAPI.deleteSavedChart(chartId);
+      const token = await getToken();
+      const response = await queryAPI.deleteSavedChart(chartId, token);
       if (response.success) {
         toast.success("Chart unsaved");
         queryClient.invalidateQueries({ queryKey: ['saved-charts'] });
@@ -170,9 +194,11 @@ export default function Analytics() {
     }
   };
 
-  // Load messages from localStorage on mount
+  // Load messages from localStorage when user changes
   useEffect(() => {
-    const saved = localStorage.getItem('lumina_chat_history');
+    if (!userId) return;
+    
+    const saved = localStorage.getItem(`lumina_chat_history_${userId}`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -186,25 +212,31 @@ export default function Analytics() {
         console.error("Failed to parse chat history", e);
       }
     }
-  }, []);
+  }, [userId]);
 
   // Save messages to localStorage whenever they change
   useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem('lumina_chat_history', JSON.stringify(messages));
+    if (userId && messages.length > 0) {
+      localStorage.setItem(`lumina_chat_history_${userId}`, JSON.stringify(messages));
     }
-  }, [messages]);
+  }, [messages, userId]);
 
   const handleClearHistory = () => {
     if (window.confirm("Are you sure you want to clear the chat history?")) {
       setMessages([]);
-      localStorage.removeItem('lumina_chat_history');
+      if (userId) {
+        localStorage.removeItem(`lumina_chat_history_${userId}`);
+      }
       toast.success("Chat history cleared");
     }
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+      {/* Background Glows */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
+      
       {/* Header */}
       <Header
         actions={
@@ -247,6 +279,9 @@ export default function Analytics() {
             isLoading={isLoading}
             onSaveChart={handleSaveChart}
             onDeleteChart={handleDeleteChart}
+            onSuggestionClick={handleSendMessage}
+            insightsEnabled={insightsEnabled}
+            onToggleInsights={setInsightsEnabled}
           />
         </div>
 

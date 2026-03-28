@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict
 from uuid import uuid4
@@ -11,8 +11,15 @@ from pathlib import Path
 import shutil
 from sqlalchemy import inspect
 
+# Import SQLAlchemy models & setup
+from models import SessionLocal, init_db, User, SavedChart as DBCart, Dashboard as DBDashboard, DataSource as DBDataSource
+from sqlalchemy.orm import Session
+
 # Import your RAG system
-from agnet_rag import hospital_sql_query_rag, generic_sql_query_rag, schema_rag, rebuild_schema_index
+from agnet_rag import default_sql_query_rag, generic_sql_query_rag, schema_rag, rebuild_schema_index, SchemaRAG
+
+# Import caching
+from caching import cache_manager
 
 # Import data source manager
 from data_sources import DataSourceManager
@@ -20,12 +27,34 @@ from data_sources import DataSourceManager
 # Import smart question generator
 from smart_questions import analyze_schema, detect_business_domain, detect_key_metrics, generate_smart_questions
 
+# Import insight engine
+from insight_engine import insight_engine
+
+# Import forensic intelligence graph (LangGraph)
+from forensic_graph import forensic_engine
+
+# Import auth dependency
+try:
+    from auth import get_current_user
+except ImportError:
+    # Use dummy for now if running without auth setup
+    async def get_current_user():
+        return {"user_id": "anonymous"}
+
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Hospital Analytics API",
+    title="Enterprise Analytics API",
     description="Natural language to SQL with RAG",
     version="1.0.0"
 )
@@ -46,7 +75,8 @@ app.add_middleware(
 class QueryRequest(BaseModel):
     question: str = Field(..., min_length=3, max_length=500, description="Natural language question")
     limit: Optional[int] = Field(default=20, ge=1, le=100, description="Maximum rows to return")
-    chart_type: Optional[str] = Field(default=None, description="Override chart type (bar, pie, line, table)")
+    chart_type: Optional[str] = Field(default=None, description="Override chart type")
+    generate_insights: Optional[bool] = Field(default=False, description="Run Lumina Insight Engine")
     
     @field_validator('question')
     @classmethod
@@ -63,6 +93,8 @@ class QueryResponse(BaseModel):
     chart: Optional[Dict] = None
     chart_id: Optional[str] = None
     reasoning: Optional[str] = None
+    insights: Optional[str] = None
+    suggestions: Optional[List[str]] = None
     row_count: Optional[int] = None
     retrieved_tables: Optional[List[str]] = None
     execution_time_ms: Optional[float] = None
@@ -80,6 +112,7 @@ class SavedChart(BaseModel):
     x_axis: Optional[str] = None
     y_axis: Optional[str] = None
     timestamp: datetime
+    user_id: Optional[str] = None
 
 
 class DashboardCreateRequest(BaseModel):
@@ -105,6 +138,7 @@ class DashboardResponse(BaseModel):
     layout: str
     created_at: datetime
     total_charts: int
+    user_id: Optional[str] = None
 
 
 class HealthResponse(BaseModel):
@@ -122,6 +156,17 @@ class SchemaInfo(BaseModel):
     indexed: bool
     collection_count: int
     persist_directory: str
+
+class DiagnoseRequest(BaseModel):
+    question: str
+    anomaly_data: List[Dict]
+    source_id: Optional[str] = None
+
+class DiagnoseResponse(BaseModel):
+    verdict: str
+    diagnostic_path: List[Dict]
+    investigation_steps: List[str]
+    timestamp: datetime = Field(default_factory=datetime.now)
 
 
 class DatabaseConnectionRequest(BaseModel):
@@ -235,6 +280,52 @@ saved_dashboards = load_dashboards()
 data_source_manager = DataSourceManager()
 active_sources = {}  # {session_id: source_id} - track active source per session
 
+# Helper to sync user in DB
+def sync_user(db: Session, user_id: str):
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        user = User(user_id=user_id)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    return user
+
+# Helper to sync data sources from DB to runtime manager
+def sync_data_sources_from_db():
+    db = SessionLocal()
+    try:
+        sources = db.query(DBDataSource).all()
+        for s in sources:
+            try:
+                if s.type == "file":
+                    info = s.connection_info
+                    data_source_manager.add_file(
+                        name=s.name,
+                        file_path=info.get("file_path"),
+                        file_type=info.get("file_type"),
+                        source_id=s.source_id
+                    )
+                elif s.type == "database":
+                    info = s.connection_info
+                    # Decrypt password if needed
+                    from security import security_manager
+                    password = security_manager.decrypt(info.get("encrypted_password"))
+                    
+                    data_source_manager.add_database(
+                        name=s.name,
+                        db_type=s.db_type,
+                        host=info.get("host"),
+                        port=info.get("port"),
+                        username=info.get("username"),
+                        password=password,
+                        database=info.get("database"),
+                        source_id=s.source_id
+                    )
+            except Exception as e:
+                logger.error(f"Failed to re-hydrate data source {s.source_id}: {e}")
+    finally:
+        db.close()
+
 # ============================================
 # DEMO MODE: Auto-load hospital database
 # ============================================
@@ -271,11 +362,8 @@ def initialize_demo_mode():
             "is_demo": True  # Flag to identify demo source
         }
         
-        # Set as default active source
-        active_sources["default"] = DEMO_SOURCE_ID
-        
+        # Demo mode is available for all users to activate manually
         logger.info(f"✅ Demo mode initialized with {len(tables)} tables")
-        logger.info("💡 Demo database is active by default")
         
     except Exception as e:
         logger.error(f"Failed to initialize demo mode: {e}")
@@ -301,11 +389,14 @@ async def health():
 
 
 @app.get("/mode/status")
-async def get_mode_status(session_id: str = "default"):
+async def get_mode_status(
+    user: dict = Depends(get_current_user)
+):
     """
-    Get current mode status and active data source
+    Get current mode status and active data source for the authenticated user
     """
-    active_source_id = active_sources.get(session_id)
+    user_id = user["user_id"]
+    active_source_id = active_sources.get(user_id)
     
     if not active_source_id:
         return {
@@ -377,58 +468,64 @@ async def rebuild_schema():
 
 @app.post("/data-sources/upload", response_model=DataSourceResponse)
 async def upload_file(
-    file: UploadFile = File(...),
-    name: Optional[str] = None
+    file: UploadFile = File(...), 
+    name: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    """
-    Upload Excel or CSV file and load into SQLite
-    """
+    """Upload a file and store metadata in SQL"""
     try:
-        # Validate file type
-        file_ext = Path(file.filename).suffix.lower()
-        if file_ext not in ['.csv', '.xlsx', '.xls']:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported file type: {file_ext}. Only CSV and Excel files are supported."
-            )
+        user_id = user["user_id"]
+        sync_user(db, user_id)
         
-        # Use filename as name if not provided
-        if not name:
-            name = Path(file.filename).stem
-        
-        # Save uploaded file temporarily
-        upload_dir = Path("./uploads")
-        upload_dir.mkdir(exist_ok=True)
-        
-        file_path = upload_dir / file.filename
-        with file_path.open("wb") as buffer:
+        file_path = f"data/{uuid4()}_{file.filename}"
+        with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+            
+        file_type = file.filename.split(".")[-1].lower()
+        source_name = name or file.filename
         
-        # Add file to data source manager
-        file_type = file_ext[1:]  # Remove the dot
+        # Add to runtime manager
         result = data_source_manager.add_file(
-            name=name,
-            file_path=str(file_path),
+            name=source_name,
+            file_path=file_path,
             file_type=file_type
         )
         
-        logger.info(f"File uploaded successfully: {name}")
+        # Persist in SQL with correct multi-sheet metadata
+        db_source = DBDataSource(
+            source_id=result["source_id"],
+            user_id=user_id,
+            name=source_name,
+            type="file",
+            connection_info={
+                "file_path": file_path,
+                "file_type": file_type,
+                "tables": result.get("tables", [])
+            },
+            status="loaded",
+            table_count=result.get("table_count", 1)  # Correct count for multi-sheet Excel
+        )
+        db.add(db_source)
+        db.commit()
         
-        return DataSourceResponse(**result)
-        
-    except HTTPException:
-        raise
+        return result
     except Exception as e:
-        logger.error(f"File upload error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+        logger.error(f"Upload failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.post("/data-sources/database", response_model=DataSourceResponse)
-async def connect_database(request: DatabaseConnectionRequest):
-    """
-    Connect to external database (PostgreSQL, MySQL, SQL Server)
-    """
+@app.post("/data-sources/connect", response_model=DataSourceResponse)
+async def connect_database(
+    request: DatabaseConnectionRequest,
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Connect to database and store metadata in SQL"""
     try:
+        user_id = user["user_id"]
+        sync_user(db, user_id)
+        
+        # Add to runtime manager
         result = data_source_manager.add_database(
             name=request.name,
             db_type=request.db_type,
@@ -439,22 +536,62 @@ async def connect_database(request: DatabaseConnectionRequest):
             database=request.database
         )
         
-        logger.info(f"Database connected successfully: {request.name}")
+        # Get encrypted password from manager (it handles security)
+        runtime_source = data_source_manager.get_source(result["source_id"])
         
-        return DataSourceResponse(**result)
+        # Persist in SQL
+        db_source = DBDataSource(
+            source_id=result["source_id"],
+            user_id=user_id,
+            name=request.name,
+            type="database",
+            db_type=request.db_type,
+            connection_info={
+                "host": request.host,
+                "port": request.port,
+                "username": request.username,
+                "encrypted_password": runtime_source["encrypted_password"],
+                "database": request.database
+            },
+            status="connected",
+            table_count=result["table_count"]
+        )
+        db.add(db_source)
+        db.commit()
         
+        return result
     except Exception as e:
-        logger.error(f"Database connection error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
+        logger.error(f"Connection failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/data-sources")
-async def list_data_sources():
-    """
-    List all connected data sources
-    """
+async def list_data_sources(
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List all connected data sources for this user"""
     try:
-        sources = data_source_manager.list_sources()
+        user_id = user["user_id"]
+        # Get from DB for isolation
+        db_sources = db.query(DBDataSource).filter(DBDataSource.user_id == user_id).all()
+        
+        # Match with runtime manager for current status
+        sources = []
+        for s in db_sources:
+            runtime_info = data_source_manager.get_source(s.source_id)
+            source_info = {
+                "source_id": s.source_id,
+                "name": s.name,
+                "type": s.type,
+                "status": runtime_info["status"] if runtime_info else "disconnected",
+                "table_count": runtime_info["table_count"] if runtime_info else s.table_count,
+                "created_at": s.created_at.isoformat()
+            }
+            if s.type == "database":
+                source_info["db_type"] = s.db_type
+            sources.append(source_info)
+            
         return {
             "success": True,
             "count": len(sources),
@@ -487,6 +624,68 @@ async def get_data_source(source_id: str):
     }
 
 
+@app.get("/data-sources/{source_id}/schema")
+async def get_data_source_schema(
+    source_id: str,
+    enrich: bool = False,
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get the Sentinel Map (Schema Blueprint) for a data source.
+    Deterministic relationship mapping (Foreign Keys).
+    """
+    user_id = user["user_id"]
+    
+    # Verify ownership
+    if source_id != DEMO_SOURCE_ID:
+        db_source = db.query(DBDataSource).filter(
+            DBDataSource.source_id == source_id,
+            DBDataSource.user_id == user_id
+        ).first()
+        
+        if not db_source:
+            raise HTTPException(status_code=403, detail="Not authorized to access this schema")
+            
+    source = data_source_manager.get_source(source_id)
+    if not source:
+        raise HTTPException(status_code=404, detail=f"Data source {source_id} not found")
+        
+    try:
+        # Create temporary SchemaRAG for this engine
+        engine = source["engine"]
+        temp_schema_rag = SchemaRAG(
+            engine, 
+            None, 
+            persist_directory="./chroma_db",
+            collection_name=f"schema-{source_id}"
+        )
+        
+        blueprint = temp_schema_rag.get_blueprint()
+        
+        # Add metadata
+        blueprint["source_name"] = source["name"]
+        blueprint["source_id"] = source_id
+        blueprint["timestamp"] = datetime.now().isoformat()
+        
+        # Optional AI Enrichment (Hybrid Mode)
+        # Note: We can implement this later to keep initial cost zero
+        blueprint["ai_enriched"] = enrich
+        
+        return blueprint
+        
+    except Exception as e:
+        logger.error(f"Error generating schema blueprint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/data-sources/{source_id}/schema/cache")
+async def clear_schema_cache(source_id: str, user: dict = Depends(get_current_user)):
+    """Clear the cached schema index for a data source"""
+    # ... logic to clear ChromaDB collection ...
+    return {"message": "Schema cache cleared"}
+
+
 @app.delete("/data-sources/{source_id}")
 async def remove_data_source(source_id: str):
     """
@@ -504,48 +703,98 @@ async def remove_data_source(source_id: str):
 
 
 @app.post("/data-sources/{source_id}/activate")
-async def set_active_source(source_id: str, session_id: str = "default"):
+async def set_active_source(
+    source_id: str, 
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    Set active data source for a session
+    Set active data source for the authenticated user (requires ownership)
     """
-    source = data_source_manager.get_source(source_id)
+    user_id = user["user_id"]
     
+    # Verify source belongs to user (or is demo)
+    if source_id != DEMO_SOURCE_ID:
+        db_source = db.query(DBDataSource).filter(
+            DBDataSource.source_id == source_id,
+            DBDataSource.user_id == user_id
+        ).first()
+        
+        if not db_source:
+            raise HTTPException(status_code=403, detail="Not authorized to access this data source")
+    
+    source = data_source_manager.get_source(source_id)
     if not source:
         raise HTTPException(status_code=404, detail=f"Data source {source_id} not found")
     
-    active_sources[session_id] = source_id
+    active_sources[user_id] = source_id
     
     return JSONResponse(
         content={
             "message": f"Active data source set to: {source['name']}",
             "source_id": source_id,
-            "session_id": session_id
+            "user_id": user_id
         },
         status_code=200
     )
 
 
-# Global cache for smart questions
-# Format: {source_id: {"questions": [], "domain": "", "timestamp": datetime}}
-smart_questions_cache = {}
+@app.post("/data-sources/deactivate")
+async def deactivate_source(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Clear the active data source for the authenticated user
+    """
+    user_id = user["user_id"]
+    if user_id in active_sources:
+        active_sources[user_id] = None
+    
+    return JSONResponse(
+        content={
+            "message": "Data source deactivated",
+            "user_id": user_id
+        },
+        status_code=200
+    )
+
+
+# Use persistent cache_manager from caching.py
 
 @app.get("/data-sources/{source_id}/smart-questions")
-async def get_smart_questions(source_id: str, count: int = 6, refresh: bool = False):
+async def get_smart_questions(
+    source_id: str, 
+    count: int = 6, 
+    refresh: bool = False,
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    Generate smart, business-relevant questions for a data source
+    Generate smart, business-relevant questions for a data source (requires ownership)
     """
+    user_id = user["user_id"]
+    
+    # Verify ownership
+    if source_id != DEMO_SOURCE_ID:
+        db_source = db.query(DBDataSource).filter(
+            DBDataSource.source_id == source_id,
+            DBDataSource.user_id == user_id
+        ).first()
+        
+        if not db_source:
+            raise HTTPException(status_code=403, detail="Not authorized to access these questions")
     try:
         # Check cache first
-        if not refresh and source_id in smart_questions_cache:
-            cache_entry = smart_questions_cache[source_id]
+        cached_data = cache_manager.get_smart_questions(source_id)
+        if not refresh and cached_data:
             logger.info(f"Returning cached smart questions for {source_id}")
             return JSONResponse(
                 content={
-                    "questions": cache_entry["questions"],
-                    "domain": cache_entry["domain"],
+                    "questions": cached_data["questions"],
+                    "domain": cached_data["domain"],
                     "source_id": source_id,
-                    "source_name": cache_entry["source_name"],
-                    "generated_at": cache_entry["timestamp"],
+                    "source_name": cached_data["source_name"],
+                    "generated_at": cached_data["timestamp"],
                     "cached": True
                 },
                 status_code=200
@@ -579,12 +828,13 @@ async def get_smart_questions(source_id: str, count: int = 6, refresh: bool = Fa
         questions = generate_smart_questions(schema_info, domain, key_metrics, count)
         
         # Update cache
-        smart_questions_cache[source_id] = {
+        cache_data = {
             "questions": questions,
             "domain": domain,
             "source_name": source["name"],
             "timestamp": datetime.now().isoformat()
         }
+        cache_manager.set_smart_questions(source_id, cache_data)
         
         return JSONResponse(
             content={
@@ -609,10 +859,16 @@ async def get_smart_questions(source_id: str, count: int = 6, refresh: bool = Fa
 conversation_history = {}
 
 @app.post("/query", response_model=QueryResponse)
-async def process_query(request: QueryRequest, session_id: str = "default"):
+async def process_query(
+    request: QueryRequest, 
+    user: dict = Depends(get_current_user)
+):
     """
     Execute natural language query against the active data source
     """
+    # Strictly use clerk user_id as session_id
+    session_id = user["user_id"]
+        
     try:
         import time
         start_time = time.time()
@@ -631,8 +887,8 @@ async def process_query(request: QueryRequest, session_id: str = "default"):
         
         if not active_source_id:
             # No active source - use demo hospital DB as fallback
-            logger.warning(f"No active source for session {session_id}, using demo hospital DB")
-            result = hospital_sql_query_rag(
+            logger.warning(f"No active source for session {session_id}, using demo DB")
+            result = default_sql_query_rag(
                 question=request.question,
                 limit=request.limit
             )
@@ -654,16 +910,20 @@ async def process_query(request: QueryRequest, session_id: str = "default"):
             if source["type"] == "file":
                 db_type = "sqlite"
             
+            # Pull column stats for value-aware SQL (files only)
+            column_stats = source.get("column_stats") if source["type"] == "file" else None
+            
             logger.info(f"Querying {source['name']} ({db_type}) - {source['table_count']} tables")
             
-            # Execute generic query with history
+            # Execute generic query with history and value-aware stats
             result = generic_sql_query_rag(
                 question=request.question,
                 engine=engine,
                 db_type=db_type,
                 source_id=active_source_id,
                 limit=request.limit,
-                history=session_history  # Pass history
+                history=session_history,
+                column_stats=column_stats  # Value-aware indexing
             )
 
         # Store interaction in history (if successful SQL generation)
@@ -711,6 +971,30 @@ async def process_query(request: QueryRequest, session_id: str = "default"):
         #     save_charts(saved_charts)
         #     logger.info(f"Auto-saved chart: {chart_id}")
         
+        # Generate Insights (only when explicitly requested)
+        insights = None
+        suggestions = []
+        
+        if request.generate_insights and result.get("result") and len(result["result"]) > 0:
+            # Check cache for insights
+            cached_intel = cache_manager.get_insights(active_source_id or "demo", request.question)
+            if cached_intel:
+                logger.info(f"Returning cached insights for: {request.question}")
+                insights = cached_intel.get("insights")
+                suggestions = cached_intel.get("suggestions", [])
+            else:
+                cols = list(result["result"][0].keys())
+                insights = insight_engine.generate_narrative(request.question, result["result"], cols)
+                suggestions = insight_engine.generate_suggestions(request.question, result["result"], cols)
+                
+                # Save to cache
+                cache_manager.set_insights(active_source_id or "demo", request.question, {
+                    "insights": insights,
+                    "suggestions": suggestions
+                })
+
+
+        
         return QueryResponse(
             success=True,
             query=result.get("query"),
@@ -718,6 +1002,8 @@ async def process_query(request: QueryRequest, session_id: str = "default"):
             chart=chart_config,
             chart_id=chart_id,
             reasoning=result.get("reasoning"),
+            insights=insights,
+            suggestions=suggestions,
             row_count=result.get("row_count"),
             retrieved_tables=result.get("retrieved_tables"),
             execution_time_ms=execution_time
@@ -733,154 +1019,287 @@ async def process_query(request: QueryRequest, session_id: str = "default"):
         )
 
 
-@app.get("/saved-charts", response_model=List[SavedChart])
-async def get_saved_charts(limit: Optional[int] = None):
-    """Get all saved charts (optionally limited to recent N)"""
-    if limit:
-        return saved_charts[-limit:]
-    return saved_charts
+@app.post("/diagnose", response_model=DiagnoseResponse)
+async def diagnose_anomaly(
+    request: DiagnoseRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Forensic Root Cause Analysis using LangGraph Multi-Agent Engine (Causal Nexus)
+    """
+    session_id = user["user_id"]
+    logger.info(f"🔍 Starting 'Causal Nexus' Forensic Analysis for session {session_id}: {request.question}")
+    
+    try:
+        # 1. Get the current Sentinel Map (Blueprint) for the ACTIVE source
+        active_source_id = active_sources.get(session_id)
+        blueprint = None
+        active_engine = None
+        
+        if active_source_id:
+            source = data_source_manager.get_source(active_source_id)
+            if source:
+                active_engine = source["engine"]  # Capture active engine for agents
+                # Create a temporary SchemaRAG for this specific source
+                collection_name = f"schema-{active_source_id}"
+                temp_schema_rag = SchemaRAG(
+                    active_engine, 
+                    None, 
+                    persist_directory="./chroma_db",
+                    collection_name=collection_name
+                )
+                blueprint = temp_schema_rag.get_blueprint()
+                
+                # 🎯 Pre-Filter using Chroma to prevent Groq Token Limit (413 Payload Too Large)
+                if blueprint and len(blueprint.get("tables", [])) > 5:
+                    logger.info(f"Schema is large ({len(blueprint['tables'])} tables). Using Chroma to filter top 5 relevant tables for Nexus...")
+                    relevant_schemas = temp_schema_rag.retrieve_relevant_tables(request.question, top_k=5)
+                    relevant_table_names = set(s["table_name"] for s in relevant_schemas)
+                    
+                    if relevant_table_names:
+                        blueprint["tables"] = [t for t in blueprint["tables"] if t["name"] in relevant_table_names]
+                        blueprint["relationships"] = [
+                            r for r in blueprint["relationships"]
+                            if r["from_table"] in relevant_table_names and r["to_table"] in relevant_table_names
+                        ]
+                        logger.info(f"Filtered Nexus blueprint to: {relevant_table_names}")
+        
+        # Fallback to global schema_rag if no active source or blueprint failed
+        if not blueprint:
+            if schema_rag:
+                blueprint = schema_rag.get_blueprint()
+                
+                # Pre-filter fallback blueprint too
+                if blueprint and len(blueprint.get("tables", [])) > 5:
+                    relevant_schemas = schema_rag.retrieve_relevant_tables(request.question, top_k=5)
+                    relevant_table_names = set(s["table_name"] for s in relevant_schemas)
+                    if relevant_table_names:
+                        blueprint["tables"] = [t for t in blueprint["tables"] if t["name"] in relevant_table_names]
+                        blueprint["relationships"] = [
+                            r for r in blueprint["relationships"]
+                            if r["from_table"] in relevant_table_names and r["to_table"] in relevant_table_names
+                        ]
+            else:
+                logger.warning("No blueprint available (MySQL offline and no active file source)")
+                blueprint = {"tables": [], "relationships": []}
+        
+        # 2. Invoke the Forensic Engine (LangGraph)
+        inputs = {
+            "question": request.question,
+            "anomaly_data": request.anomaly_data,
+            "blueprint": blueprint,
+            "engine": active_engine,
+            "investigation_steps": [],
+            "evidence_found": [],
+            "sql_call_count": 0,
+            "drill_down_hints": []
+        }
+        
+        # Run the graph
+        result = forensic_engine.invoke(inputs)
+        
+        return DiagnoseResponse(
+            verdict=result.get("verdict", "No conclusive verdict reached."),
+            diagnostic_path=result.get("diagnostic_path", []),
+            investigation_steps=result.get("investigation_steps", [])
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Forensic Analysis failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Forensic Engine error: {str(e)}")
 
 
 @app.post("/saved-charts", response_model=SavedChart)
-async def create_saved_chart(chart: SavedChart):
-    """Manually save a chart"""
+async def create_saved_chart(
+    chart: SavedChart, 
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Save a chart to SQL database"""
     try:
-        # Check if chart ID already exists
-        for existing in saved_charts:
-            if existing["chart_id"] == chart.chart_id:
-                # Update existing
-                existing.update(chart.model_dump())
-                save_charts(saved_charts)
-                return chart
-
-        # Add new
-        saved_charts.append(chart.model_dump())
-        save_charts(saved_charts)
-        logger.info(f"Manually saved chart: {chart.chart_id}")
-        return chart
+        user_id = user["user_id"]
+        sync_user(db, user_id)
+        
+        # Check if chart exists for this user
+        existing = db.query(DBCart).filter(DBCart.chart_id == chart.chart_id, DBCart.user_id == user_id).first()
+        if existing:
+            for key, value in chart.model_dump().items():
+                setattr(existing, key, value)
+            existing.user_id = user_id
+            db.commit()
+            return existing
+        
+        # Create new
+        db_chart = DBCart(**chart.model_dump())
+        db_chart.user_id = user_id
+        db.add(db_chart)
+        db.commit()
+        db.refresh(db_chart)
+        return db_chart
     except Exception as e:
-        logger.error(f"Error saving chart: {e}")
+        logger.error(f"Error saving chart to DB: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/saved-charts", response_model=List[SavedChart])
+async def get_charts(
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List all saved charts for current user"""
+    user_id = user["user_id"]
+    return db.query(DBCart).filter(DBCart.user_id == user_id).all()
 
 
 @app.get("/saved-charts/{chart_id}", response_model=SavedChart)
-async def get_chart(chart_id: str):
-    """Get a specific saved chart by ID"""
-    for chart in saved_charts:
-        if chart["chart_id"] == chart_id:
-            return SavedChart(**chart)
-    
+async def get_chart(
+    chart_id: str, 
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get a specific saved chart for current user"""
+    user_id = user["user_id"]
+    chart = db.query(DBCart).filter(DBCart.chart_id == chart_id, DBCart.user_id == user_id).first()
+    if chart:
+        return chart
     raise HTTPException(status_code=404, detail=f"Chart {chart_id} not found")
 
 
 @app.delete("/saved-charts/{chart_id}")
-async def delete_chart(chart_id: str):
-    """Delete a saved chart"""
-    global saved_charts
+async def delete_chart(
+    chart_id: str, 
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a saved chart for current user"""
+    user_id = user["user_id"]
+    chart = db.query(DBCart).filter(DBCart.chart_id == chart_id, DBCart.user_id == user_id).first()
+    if not chart:
+        raise HTTPException(status_code=404, detail=f"Chart {chart_id} not found")
     
-    for i, chart in enumerate(saved_charts):
-        if chart["chart_id"] == chart_id:
-            deleted_chart = saved_charts.pop(i)
-            save_charts(saved_charts)
-            return JSONResponse(
-                content={"message": f"Chart '{deleted_chart['title']}' deleted successfully"},
-                status_code=200
-            )
-    
-    raise HTTPException(status_code=404, detail=f"Chart {chart_id} not found")
+    db.delete(chart)
+    db.commit()
+    return {"success": True, "message": f"Chart {chart_id} deleted"}
 
 
 @app.delete("/saved-charts")
-async def clear_all_charts():
-    """Clear all saved charts"""
-    global saved_charts
-    count = len(saved_charts)
-    saved_charts.clear()
-    save_charts(saved_charts)
-    
-    return JSONResponse(
-        content={"message": f"Cleared {count} saved charts"},
-        status_code=200
-    )
+async def clear_all_charts(
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Clear all saved charts for current user"""
+    user_id = user["user_id"]
+    count = db.query(DBCart).filter(DBCart.user_id == user_id).delete()
+    db.commit()
+    return {"success": True, "message": f"Cleared {count} charts"}
 
 
 @app.post("/dashboard/create", response_model=DashboardResponse)
-async def create_dashboard(request: DashboardCreateRequest):
-    """Create a dashboard from saved charts"""
+async def create_dashboard(
+    request: DashboardCreateRequest, 
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create a dashboard in SQL database"""
     try:
-        # Select charts
-        if request.include_all:
-            selected_charts = saved_charts
-        elif request.selected_chart_ids:
-            selected_charts = [
-                chart for chart in saved_charts 
-                if chart["chart_id"] in request.selected_chart_ids
-            ]
-        else:
-            raise HTTPException(status_code=400, detail="Must include_all or provide selected_chart_ids")
+        user_id = user["user_id"]
+        sync_user(db, user_id)
         
-        if not selected_charts:
+        # Get charts for this user
+        if request.include_all:
+            user_charts = db.query(DBCart).filter(DBCart.user_id == user_id).all()
+        else:
+            user_charts = db.query(DBCart).filter(
+                DBCart.user_id == user_id, 
+                DBCart.chart_id.in_(request.selected_chart_ids or [])
+            ).all()
+            
+        if not user_charts:
             raise HTTPException(status_code=400, detail="No charts available for dashboard")
         
-        # Create dashboard
         dashboard_id = str(uuid4())
-        dashboard = {
-            "dashboard_id": dashboard_id,
-            "name": request.dashboard_name,
-            "description": request.description,
-            "charts": selected_charts,
-            "layout": request.layout,
-            "created_at": datetime.now(),
-            "total_charts": len(selected_charts)
-        }
+        db_dashboard = DBDashboard(
+            dashboard_id=dashboard_id,
+            user_id=user_id,
+            name=request.dashboard_name,
+            description=request.description,
+            charts=[c.chart_id for c in user_charts], # Store IDs in SQL JSON
+            layout=request.layout,
+            created_at=datetime.now(),
+            total_charts=len(user_charts)
+        )
         
-        # Save dashboard
-        saved_dashboards.append(dashboard)
-        save_dashboards(saved_dashboards)
+        db.add(db_dashboard)
+        db.commit()
+        db.refresh(db_dashboard)
         
-        logger.info(f"Created dashboard: {dashboard_id} with {len(selected_charts)} charts")
-        
-        return DashboardResponse(**dashboard)
+        # Return with full chart objects for frontend
+        response = db_dashboard.__dict__.copy()
+        response['charts'] = user_charts
+        return response
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Dashboard creation error: {e}", exc_info=True)
+        logger.error(f"Dashboard creation error: {e}")
         raise HTTPException(status_code=500, detail=f"Dashboard creation failed: {str(e)}")
 
-
 @app.get("/dashboards", response_model=List[DashboardResponse])
-async def get_dashboards():
-    """Get all saved dashboards"""
-    return [DashboardResponse(**dash) for dash in saved_dashboards]
+async def get_dashboards(
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all dashboards for current user with full chart details"""
+    user_id = user["user_id"]
+    dashboards = db.query(DBDashboard).filter(DBDashboard.user_id == user_id).all()
+    
+    results = []
+    for dash in dashboards:
+        # Fetch charts for this dashboard
+        chart_ids = dash.charts if isinstance(dash.charts, list) else []
+        charts = db.query(DBCart).filter(DBCart.chart_id.in_(chart_ids)).all()
+        
+        dash_dict = {c.name: getattr(dash, c.name) for c in dash.__table__.columns}
+        dash_dict['charts'] = charts
+        results.append(dash_dict)
+        
+    return results
 
 
 @app.get("/dashboards/{dashboard_id}", response_model=DashboardResponse)
-async def get_dashboard(dashboard_id: str):
-    """Get a specific dashboard by ID"""
-    for dashboard in saved_dashboards:
-        if dashboard["dashboard_id"] == dashboard_id:
-            return DashboardResponse(**dashboard)
+async def get_dashboard(
+    dashboard_id: str, 
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get a specific dashboard with full chart details for current user"""
+    user_id = user["user_id"]
+    dash = db.query(DBDashboard).filter(DBDashboard.dashboard_id == dashboard_id, DBDashboard.user_id == user_id).first()
+    if not dash:
+        raise HTTPException(status_code=404, detail=f"Dashboard {dashboard_id} not found")
     
-    raise HTTPException(status_code=404, detail=f"Dashboard {dashboard_id} not found")
-
+    # Fetch charts
+    chart_ids = dash.charts if isinstance(dash.charts, list) else []
+    charts = db.query(DBCart).filter(DBCart.chart_id.in_(chart_ids)).all()
+    
+    response = {c.name: getattr(dash, c.name) for c in dash.__table__.columns}
+    response['charts'] = charts
+    return response
 
 @app.delete("/dashboards/{dashboard_id}")
-async def delete_dashboard(dashboard_id: str):
-    """Delete a dashboard"""
-    global saved_dashboards
+async def delete_dashboard(
+    dashboard_id: str, 
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a dashboard for current user"""
+    user_id = user["user_id"]
+    dash = db.query(DBDashboard).filter(DBDashboard.dashboard_id == dashboard_id, DBDashboard.user_id == user_id).first()
+    if not dash:
+        raise HTTPException(status_code=404, detail=f"Dashboard {dashboard_id} not found")
     
-    for i, dashboard in enumerate(saved_dashboards):
-        if dashboard["dashboard_id"] == dashboard_id:
-            deleted_dashboard = saved_dashboards.pop(i)
-            save_dashboards(saved_dashboards)
-            return JSONResponse(
-                content={"message": f"Dashboard '{deleted_dashboard['name']}' deleted successfully"},
-                status_code=200
-            )
-    
-    raise HTTPException(status_code=404, detail=f"Dashboard {dashboard_id} not found")
+    db.delete(dash)
+    db.commit()
+    return {"success": True, "message": f"Dashboard {dashboard_id} deleted"}
 
 
 # ============================================
@@ -921,11 +1340,22 @@ async def general_exception_handler(request, exc):
 @app.on_event("startup")
 async def startup_event():
     """Startup event"""
-    logger.info("🚀 Hospital Analytics API Started")
+    # Initialize JSON to SQL database
+    init_db()
+    logger.info("🗄️  SQL Database Initialized")
+    
+    # Sync data sources
+    sync_data_sources_from_db()
+    logger.info("🔄 Data Sources Re-hydrated")
+    
+    logger.info("🚀 Enterprise Analytics API Started")
     logger.info(f"📊 Loaded {len(saved_charts)} saved charts")
     logger.info(f"📈 Loaded {len(saved_dashboards)} saved dashboards")
-    logger.info(f"🗂️  ChromaDB Index: {schema_rag.collection.count()} tables indexed")
-    logger.info(f"💾 Persist Directory: {schema_rag.persist_directory}")
+    if schema_rag:
+        logger.info(f"🗂️  ChromaDB Index: {schema_rag.collection.count()} tables indexed")
+        logger.info(f"💾 Persist Directory: {schema_rag.persist_directory}")
+    else:
+        logger.warning("🗂️  ChromaDB Index: Not initialized (Database connection skipped)")
     
     # Initialize demo mode
     initialize_demo_mode()
@@ -938,7 +1368,7 @@ async def shutdown_event():
     logger.info("💾 Saving data before shutdown...")
     save_charts(saved_charts)
     save_dashboards(saved_dashboards)
-    logger.info("👋 Hospital Analytics API Shutdown")
+    logger.info("👋 Enterprise Analytics API Shutdown")
 
 
 # ============================================

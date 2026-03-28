@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '@clerk/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { dashboardAPI } from '@/lib/api';
 import {
@@ -36,6 +37,7 @@ export function CreateDashboardDialog({
   onOpenChange,
   selectedCharts,
 }: CreateDashboardDialogProps) {
+  const { getToken } = useAuth();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [layout, setLayout] = useState<'grid' | 'rows' | 'columns'>('grid');
@@ -43,14 +45,16 @@ export function CreateDashboardDialog({
   const navigate = useNavigate();
 
   const mutation = useMutation({
-    mutationFn: () =>
-      dashboardAPI.createDashboard({
+    mutationFn: async () => {
+      const token = await getToken();
+      return dashboardAPI.createDashboard({
         dashboard_name: name.trim(),
         description: description.trim() || undefined,
-        layout_type: layout,
+        layout: layout,
         include_all: selectedCharts.length === 0,
         selected_chart_ids: selectedCharts.length > 0 ? selectedCharts : undefined,
-      }),
+      }, token);
+    },
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['dashboards'] });
       toast.success('Dashboard created successfully!');

@@ -41,7 +41,8 @@ class DataSourceManager:
         port: int,
         username: str,
         password: str,
-        database: str
+        database: str,
+        source_id: Optional[str] = None
     ) -> Dict:
         """
         Connect to an external database (PostgreSQL, MySQL, SQL Server)
@@ -54,11 +55,13 @@ class DataSourceManager:
             username: Database username
             password: Database password
             database: Database name
+            source_id: Optional existing ID to reuse
             
         Returns:
             Dict with source_id and metadata
         """
-        source_id = str(uuid.uuid4())
+        if not source_id:
+            source_id = str(uuid.uuid4())
         
         try:
             # Import security manager
@@ -129,46 +132,100 @@ class DataSourceManager:
         name: str,
         file_path: str,
         file_type: str,
-        sheet_name: Optional[str] = None
+        sheet_name: Optional[str] = None,
+        source_id: Optional[str] = None
     ) -> Dict:
         """
-        Load Excel/CSV file into SQLite database
-        
+        Load Excel/CSV file into SQLite database.
+        For Excel files, ALL sheets are loaded as separate tables.
+
         Args:
             name: User-friendly name for this data source
             file_path: Path to the uploaded file
             file_type: 'csv', 'xlsx', or 'xls'
-            sheet_name: For Excel files with multiple sheets (optional)
-            
+            sheet_name: (deprecated) For Excel, all sheets are now loaded
+            source_id: Optional existing ID to reuse
+
         Returns:
             Dict with source_id and metadata
         """
-        source_id = str(uuid.uuid4())
-        
+        if not source_id:
+            source_id = str(uuid.uuid4())
+
         try:
-            # Read file into pandas DataFrame
-            if file_type == "csv":
-                df = pd.read_csv(file_path)
-            elif file_type in ["xlsx", "xls"]:
-                df = pd.read_excel(file_path, sheet_name=sheet_name or 0)
-            else:
-                raise ValueError(f"Unsupported file type: {file_type}")
-            
             # Create SQLite database for this file
             sqlite_path = self.data_dir / f"{source_id}.db"
-            
-            # Enforce Read-Only mode for safety
-            # immutable=1 optimizes for read-only. mode=ro prevents writes.
-            engine = create_engine(f"sqlite:///{sqlite_path}?mode=ro&immutable=1", connect_args={'uri': True})
-            
-            # Infer table name from file name (clean it up)
-            table_name = Path(file_path).stem.lower()
-            table_name = "".join(c if c.isalnum() else "_" for c in table_name)
-            
-            # Load DataFrame into SQLite
-            df.to_sql(table_name, engine, index=False, if_exists="replace")
-            
-            # Store source metadata
+            write_engine = create_engine(f"sqlite:///{sqlite_path}")
+
+            # ------------------------------------------------------------------
+            # 1. Read file — CSV gets one table, Excel gets one table per sheet
+            # ------------------------------------------------------------------
+            sheets: Dict[str, pd.DataFrame] = {}
+
+            if file_type == "csv":
+                df = pd.read_csv(file_path)
+                table_name = Path(file_path).stem.lower()
+                table_name = "".join(c if c.isalnum() else "_" for c in table_name)
+                sheets[table_name] = df
+
+            elif file_type in ["xlsx", "xls"]:
+                all_sheets = pd.read_excel(file_path, sheet_name=None)  # Load ALL sheets
+                for raw_sheet, df in all_sheets.items():
+                    t = raw_sheet.lower()
+                    t = "".join(c if c.isalnum() else "_" for c in t)
+                    sheets[t] = df
+                logger.info(f"Excel file '{name}' has {len(sheets)} sheet(s): {list(sheets.keys())}")
+            else:
+                raise ValueError(f"Unsupported file type: {file_type}")
+
+            # ------------------------------------------------------------------
+            # 2. Write every sheet as a table in the SQLite DB
+            # ------------------------------------------------------------------
+            tables: List[str] = []
+            total_rows = 0
+            all_previews: Dict[str, list] = {}
+            all_stats: Dict[str, dict] = {}
+
+            for tbl, df in sheets.items():
+                # Clean column names (remove special chars)
+                df.columns = [
+                    "".join(c if c.isalnum() else "_" for c in str(col))
+                    for col in df.columns
+                ]
+                df.to_sql(tbl, write_engine, index=False, if_exists="replace")
+                tables.append(tbl)
+                total_rows += len(df)
+
+                # 5-row data preview
+                all_previews[tbl] = df.head(5).to_dict(orient="records")
+
+                # Column-level stats for LLM context
+                stats: Dict[str, dict] = {}
+                for col in df.columns:
+                    col_info: dict = {"dtype": str(df[col].dtype)}
+                    if pd.api.types.is_numeric_dtype(df[col]):
+                        col_info.update({
+                            "min": float(df[col].min()) if not df[col].isnull().all() else None,
+                            "max": float(df[col].max()) if not df[col].isnull().all() else None,
+                            "mean": round(float(df[col].mean()), 2) if not df[col].isnull().all() else None,
+                        })
+                    else:
+                        unique_vals = df[col].dropna().unique()
+                        # For small-cardinality categoricals, store all values for value-aware text-to-SQL
+                        if len(unique_vals) <= 50:
+                            col_info["unique_values"] = [str(v) for v in unique_vals[:50]]
+                        col_info["unique_count"] = int(len(unique_vals))
+                    stats[col] = col_info
+                all_stats[tbl] = stats
+
+            write_engine.dispose()
+
+            # Step 2: separate read engine
+            engine = create_engine(f"sqlite:///{sqlite_path}")
+
+            # ------------------------------------------------------------------
+            # 3. Store metadata
+            # ------------------------------------------------------------------
             self.sources[source_id] = {
                 "source_id": source_id,
                 "name": name,
@@ -176,31 +233,37 @@ class DataSourceManager:
                 "file_type": file_type,
                 "file_path": file_path,
                 "engine": engine,
-                "tables": [table_name],
-                "table_count": 1,
-                "row_count": len(df),
-                "column_count": len(df.columns),
-                "columns": list(df.columns),
+                "tables": tables,
+                "table_count": len(tables),
+                "row_count": total_rows,
+                "column_count": sum(len(df.columns) for df in sheets.values()),
+                "previews": all_previews,   # {table: [{col: val}, ...]}
+                "column_stats": all_stats,   # {table: {col: {dtype, min/max/mean or unique_values}}}
                 "created_at": datetime.now().isoformat(),
                 "status": "loaded"
             }
-            
-            logger.info(f"Loaded {file_type} file '{name}' with {len(df)} rows, {len(df.columns)} columns")
-            
+
+            logger.info(
+                f"Loaded {file_type} file '{name}' — "
+                f"{len(tables)} table(s), {total_rows} total rows"
+            )
+
             return {
                 "source_id": source_id,
                 "name": name,
                 "type": "file",
                 "file_type": file_type,
-                "table_count": 1,  # Files always have 1 table
-                "tables": [table_name],  # List of tables
-                "created_at": datetime.now().isoformat(),  # Add created_at
+                "table_count": len(tables),
+                "tables": tables,
+                "row_count": total_rows,
+                "created_at": datetime.now().isoformat(),
                 "status": "loaded"
             }
-            
+
         except Exception as e:
             logger.error(f"Failed to load file: {e}")
             raise Exception(f"File loading failed: {str(e)}")
+
     
     def get_source(self, source_id: str) -> Optional[Dict]:
         """

@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@clerk/react";
+import { dataSourcesAPI } from "@/lib/api";
 
 interface SmartQuestion {
     id: string;
@@ -26,20 +28,21 @@ export function SmartQuestions({ sourceId, sourceName, onQuestionClick }: SmartQ
     const [loading, setLoading] = useState(false);
     const [domain, setDomain] = useState<string>("");
     const { toast } = useToast();
+    const { getToken } = useAuth();
 
     const fetchQuestions = async (forceRefresh = false) => {
         if (!sourceId) return;
 
         setLoading(true);
         try {
-            const response = await fetch(
-                `http://localhost:8000/data-sources/${sourceId}/smart-questions?count=6&refresh=${forceRefresh}`
-            );
+            const token = await getToken();
+            if (!token) return;
 
-            if (response.ok) {
-                const data = await response.json();
-                setQuestions(data.questions || []);
-                setDomain(data.domain || "");
+            const response = await dataSourcesAPI.getSmartQuestions(sourceId, token, forceRefresh);
+
+            if (response.success) {
+                setQuestions(response.data.questions || []);
+                setDomain(response.data.domain || "");
             } else {
                 throw new Error("Failed to fetch questions");
             }
@@ -88,106 +91,101 @@ export function SmartQuestions({ sourceId, sourceName, onQuestionClick }: SmartQ
 
     if (!sourceId) {
         return (
-            <Card className="border-dashed">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-primary" />
-                        Smart Question Suggestions
-                    </CardTitle>
-                    <CardDescription>
-                        Select a data source to see intelligent question suggestions
-                    </CardDescription>
-                </CardHeader>
-            </Card>
+            <div className="glass-card rounded-3xl p-8 border-white/5 text-center space-y-4">
+                <Sparkles className="h-10 w-10 text-primary mx-auto opacity-20" />
+                <h3 className="text-xl font-bold text-white tracking-tight">Intelligence Suggestions</h3>
+                <p className="text-sm text-muted-foreground/60 max-w-xs mx-auto">
+                    Select a neural data link to initialize automated intelligence queries.
+                </p>
+            </div>
         );
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-primary" />
-                            Smart Questions
-                        </CardTitle>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            AI-generated insights for {sourceName || "your data"}
-                            {domain && (
-                                <Badge variant="outline">
-                                    {domain}
-                                </Badge>
-                            )}
-                        </div>
+        <div className="glass-card rounded-3xl overflow-hidden border-white/5 shadow-2xl">
+            <div className="p-6 border-b border-white/10 bg-white/5 flex items-center justify-between">
+                <div>
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-primary neon-glow" />
+                        Smart Queries
+                    </h3>
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mt-1">
+                        Neural insights for {sourceName || "Active Data Source"}
+                        {domain && (
+                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-primary/30 text-primary">
+                                {domain}
+                            </Badge>
+                        )}
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => fetchQuestions(true)}
-                        disabled={loading}
-                    >
-                        <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                    </Button>
                 </div>
-            </CardHeader>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => fetchQuestions(true)}
+                    disabled={loading}
+                    className="h-10 w-10 rounded-xl hover:bg-white/5 text-muted-foreground hover:text-primary transition-colors"
+                >
+                    <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                </Button>
+            </div>
 
-            <CardContent>
+            <div className="p-6">
                 {loading ? (
-                    <div className="space-y-3">
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <Skeleton key={i} className="h-20 w-full" />
+                    <div className="space-y-4">
+                        {[1, 2, 3, 4].map((i) => (
+                            <Skeleton key={i} className="h-24 w-full rounded-2xl bg-white/5" />
                         ))}
                     </div>
                 ) : questions.length > 0 ? (
-                    <div className="grid gap-3">
+                    <div className="grid gap-4">
                         {questions.map((q) => (
                             <button
                                 key={q.id}
                                 onClick={() => onQuestionClick(q.question)}
-                                className="group relative overflow-hidden rounded-lg border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-md hover:scale-[1.02]"
+                                className="group relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 p-5 text-left transition-all hover:border-primary/50 hover:bg-primary/10 hover:-translate-y-1 shadow-sm"
                             >
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1 text-muted-foreground">
+                                <div className="flex items-start gap-4">
+                                    <div className="mt-1 p-2 rounded-lg bg-white/5 text-primary group-hover:scale-110 transition-transform">
                                         {getChartIcon(q.chart_type)}
                                     </div>
-                                    <div className="flex-1 space-y-2">
-                                        <p className="font-medium leading-tight group-hover:text-primary transition-colors">
+                                    <div className="flex-1 space-y-3">
+                                        <p className="font-bold text-white leading-snug group-hover:text-primary transition-colors">
                                             {q.question}
                                         </p>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-3">
                                             <Badge
                                                 variant="outline"
-                                                className={`text-xs ${getCategoryColor(q.category)}`}
+                                                className={`text-[9px] font-black uppercase tracking-widest px-2 py-0 h-5 border-none ${getCategoryColor(q.category)} shadow-lg shadow-black/20`}
                                             >
                                                 {q.category}
                                             </Badge>
-                                            <span className="text-xs text-muted-foreground">
-                                                {q.chart_type} chart
+                                            <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">
+                                                {q.chart_type} topology
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Hover effect gradient */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                                {/* Hover effect glow overlay */}
+                                <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             </button>
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                        <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                        <p>No questions generated yet</p>
+                    <div className="text-center py-12 space-y-6">
+                        <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-10" />
+                        <p className="text-muted-foreground italic text-sm">No intelligence modules generated for this source.</p>
                         <Button
                             variant="outline"
-                            size="sm"
+                            size="lg"
                             onClick={() => fetchQuestions(true)}
-                            className="mt-3"
+                            className="rounded-full px-8 glass border-primary/30 text-primary hover:bg-primary/10 font-bold"
                         >
-                            Generate Questions
+                            Generate Neural Nodes
                         </Button>
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }

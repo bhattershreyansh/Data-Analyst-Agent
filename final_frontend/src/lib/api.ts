@@ -1,11 +1,17 @@
 // Replace the entire api.ts file with:
 const API_BASE_URL = 'http://localhost:8000';
 
-// Enhanced API functions with proper error handling
+// Revised API functions with authentication support
 export const api = {
-  get: async (url: string) => {
+  get: async (url: string, token?: string | null) => {
     try {
-      const response = await fetch(`${API_BASE_URL}${url}`);
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
+      const response = await fetch(`${API_BASE_URL}${url}`, { headers });
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Authentication required');
+      }
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -17,13 +23,19 @@ export const api = {
     }
   },
 
-  post: async (url: string, data: any) => {
+  post: async (url: string, data: any, token?: string | null) => {
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
       const response = await fetch(`${API_BASE_URL}${url}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(data)
       });
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Authentication required');
+      }
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -35,9 +47,18 @@ export const api = {
     }
   },
 
-  delete: async (url: string) => {
+  delete: async (url: string, token?: string | null) => {
     try {
-      const response = await fetch(`${API_BASE_URL}${url}`, { method: 'DELETE' });
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
+      const response = await fetch(`${API_BASE_URL}${url}`, { 
+        method: 'DELETE',
+        headers
+      });
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Authentication required');
+      }
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -54,6 +75,7 @@ export interface QueryRequest {
   question: string;
   limit?: number;
   chart_type?: string;
+  generate_insights?: boolean;
 }
 
 export interface QueryResponse {
@@ -63,6 +85,8 @@ export interface QueryResponse {
   chart?: any;
   chart_id?: string;
   reasoning?: string;
+  insights?: string;
+  suggestions?: string[];
   row_count?: number;
   retrieved_tables?: string[];
   execution_time_ms?: number;
@@ -90,68 +114,128 @@ export interface Dashboard {
   created_at: string;
 }
 
+export interface DiagnoseRequest {
+  question: string;
+  anomaly_data: any[];
+  source_id?: string;
+}
+
+export interface DiagnoseResponse {
+  verdict: string;
+  diagnostic_path: {
+    title: string;
+    finding: string;
+    status: 'critical' | 'info' | 'success' | 'error';
+  }[];
+  investigation_steps: string[];
+  timestamp: string;
+}
+
 export interface DashboardCreateRequest {
   dashboard_name: string;
   description?: string;
   chart_ids?: string[];
-  layout_type?: string;
+  layout?: string;
   include_all?: boolean;
   selected_chart_ids?: string[];
 }
 
-// API functions with proper error handling
+// API functions with proper authentication support
 export const queryAPI = {
-  sendQuery: async (data: QueryRequest) => {
-    const response = await api.post('/query', data);
-    return response;
+  sendQuery: async (data: QueryRequest, token?: string | null) => {
+    return await api.post('/query', data, token);
   },
 
-  getSavedCharts: async () => {
-    const response = await api.get('/saved-charts');
-    return response;
+  getSavedCharts: async (token?: string | null) => {
+    return await api.get('/saved-charts', token);
   },
 
-  saveChart: async (chart: SavedChart) => {
-    const response = await api.post('/saved-charts', chart);
-    return response;
+  getSchema: async (sourceId: string, enrich: boolean = false, token?: string | null) => {
+    return await api.get(`/data-sources/${sourceId}/schema?enrich=${enrich}`, token);
   },
 
-  getSavedChart: async (id: string) => {
-    const response = await api.get(`/saved-charts/${id}`);
-    return response;
+  saveChart: async (chart: SavedChart, token?: string | null) => {
+    return await api.post('/saved-charts', chart, token);
   },
 
-  deleteSavedChart: async (id: string) => {
-    const response = await api.delete(`/saved-charts/${id}`);
-    return response;
+  getSavedChart: async (id: string, token?: string | null) => {
+    return await api.get(`/saved-charts/${id}`, token);
   },
 
-  clearAllCharts: async () => {
-    const response = await api.delete('/saved-charts');
-    return response;
+  deleteSavedChart: async (id: string, token?: string | null) => {
+    return await api.delete(`/saved-charts/${id}`, token);
+  },
+
+  clearAllCharts: async (token?: string | null) => {
+    return await api.delete('/saved-charts', token);
+  },
+
+  diagnoseAnomaly: async (data: DiagnoseRequest, token?: string | null) => {
+    return await api.post('/diagnose', data, token);
+  },
+};
+
+export const modeAPI = {
+  getStatus: async (token?: string | null) => {
+    return await api.get('/mode/status', token);
   },
 };
 
 export const dashboardAPI = {
-  createDashboard: async (data: DashboardCreateRequest) => {
-    const response = await api.post('/dashboard/create', data);
-    return response;
+  createDashboard: async (data: DashboardCreateRequest, token?: string | null) => {
+    return await api.post('/dashboard/create', data, token);
   },
 
-  getDashboards: async () => {
-    const response = await api.get('/dashboards');
-    return response;
+  getDashboards: async (token?: string | null) => {
+    return await api.get('/dashboards', token);
   },
 
-  getDashboard: async (id: string) => {
-    const response = await api.get(`/dashboards/${id}`);
-    return response;
+  getDashboard: async (id: string, token?: string | null) => {
+    return await api.get(`/dashboards/${id}`, token);
   },
 
-  deleteDashboard: async (id: string) => {
-    const response = await api.delete(`/dashboards/${id}`);
-    return response;
+  deleteDashboard: async (id: string, token?: string | null) => {
+    return await api.delete(`/dashboards/${id}`, token);
   },
 };
 
-export const healthCheck = () => api.get('/');
+export const dataSourcesAPI = {
+  listSources: async (token?: string | null) => {
+    return await api.get('/data-sources', token);
+  },
+  
+  connectDatabase: async (data: any, token?: string | null) => {
+    return await api.post('/data-sources/connect', data, token);
+  },
+  
+  uploadFile: async (formData: FormData, token?: string | null) => {
+    try {
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
+      const response = await fetch(`${API_BASE_URL}/data-sources/upload`, {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+      const result = await response.json();
+      return { data: result, success: response.ok };
+    } catch (error) {
+      return { data: null, success: false, error: error.message };
+    }
+  },
+
+  activateSource: async (id: string, token?: string | null) => {
+    return await api.post(`/data-sources/${id}/activate`, {}, token);
+  },
+
+  getSmartQuestions: async (id: string, token?: string | null, refresh: boolean = false) => {
+    return await api.get(`/data-sources/${id}/smart-questions?refresh=${refresh}`, token);
+  },
+
+  deactivateSource: async (token?: string | null) => {
+    return await api.post('/data-sources/deactivate', {}, token);
+  }
+};
+
+export const healthCheck = (token?: string | null) => api.get('/', token);

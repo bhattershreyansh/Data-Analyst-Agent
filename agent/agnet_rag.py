@@ -24,13 +24,24 @@ load_dotenv()
 user = "myuser"
 password = "mypassword"
 host = "localhost"
-db_name = "hospitalmanagementsystem"
+db_name = "analytics_db"
 
-# Connect to the database
-db = SQLDatabase.from_uri(
-    f"mysql+mysqlconnector://{user}:{password}@{host}/{db_name}"
-)
-engine = create_engine(f"mysql+mysqlconnector://{user}:{password}@{host}/{db_name}")
+# Connect to the database (Optional for demo)
+db = None
+engine = None
+
+try:
+    db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}/{db_name}"
+    engine = create_engine(db_uri)
+    # Test connection
+    with engine.connect() as conn:
+        logger.info("✅ Successfully connected to MySQL database")
+    db = SQLDatabase.from_uri(db_uri)
+except Exception as e:
+    logger.warning(f"⚠️  Could not connect to MySQL database: {e}")
+    logger.warning("Agent will run in 'File-Only' mode for now.")
+    engine = None
+    db = None
 
 # Initialize LLM
 groq_llm = Groq(model="llama-3.3-70b-versatile")
@@ -43,7 +54,7 @@ MAX_QUERY_LIMIT = 100
 # ============================================
 
 class SchemaRAG:
-    def __init__(self, engine, db, persist_directory="./chroma_db", collection_name="hospital_schema"):
+    def __init__(self, engine, db, persist_directory="./chroma_db", collection_name="data_schema"):
         self.engine = engine
         self.db = db
         self.inspector = inspect(engine)
@@ -137,20 +148,97 @@ Common queries: SELECT from {table_name}, JOIN {table_name}, COUNT {table_name},
         
         logger.info(f"✅ Indexed {len(table_names)} tables successfully!")
     
+    def get_blueprint(self) -> Dict:
+        """
+        Deterministic extraction of schema relationships (The Sentinel Map)
+        Returns a dict of tables with their columns and foreign keys.
+        """
+        table_names = self.inspector.get_table_names()
+        blueprint = {
+            "tables": [],
+            "relationships": []
+        }
+        
+        for table_name in table_names:
+            # Get columns
+            columns = self.inspector.get_columns(table_name)
+            column_names = [col['name'] for col in columns]
+            
+            # Get foreign keys
+            try:
+                fks = self.inspector.get_foreign_keys(table_name)
+            except:
+                fks = []
+            
+            blueprint["tables"].append({
+                "name": table_name,
+                "columns": column_names
+            })
+            
+            for fk in fks:
+                blueprint["relationships"].append({
+                    "type": "explicit",
+                    "from_table": table_name,
+                    "from_columns": fk['constrained_columns'],
+                    "to_table": fk['referred_table'],
+                    "to_columns": fk['referred_columns']
+                })
+
+        # ============================================
+        # NEW: THE SEMANTIC LINKER (The "Spreadsheet Magic")
+        # ============================================
+        # If explicit relationships are missing (common in Excel), 
+        # we discover 'Semantic Links' based on matching column names.
+        
+        # 1. Map columns to tables
+        col_to_tables = {}
+        for table_info in blueprint["tables"]:
+            for col in table_info["columns"]:
+                # Exclude generic names to prevent false positives
+                # We want specifically 'named' IDs or Category keys
+                generic_names = ["id", "name", "value", "date", "status", "type", "description"]
+                if col.lower() not in generic_names:
+                    if col not in col_to_tables:
+                        col_to_tables[col] = []
+                    col_to_tables[col].append(table_info["name"])
+
+        # 2. Identify intersections
+        for col, tables in col_to_tables.items():
+            if len(tables) > 1:
+                # We have a matching column across multiple tables!
+                # Link every pair in this set
+                for i in range(len(tables)):
+                    for j in range(i + 1, len(tables)):
+                        # Check if this relationship already exists explicitly
+                        exists = any(
+                            r["from_table"] == tables[i] and r["to_table"] == tables[j] 
+                            for r in blueprint["relationships"]
+                        )
+                        if not exists:
+                            blueprint["relationships"].append({
+                                "type": "semantic",
+                                "from_table": tables[i],
+                                "to_table": tables[j],
+                                "matching_column": col,
+                                "description": f"Common column '{col}' discovered across tables"
+                            })
+                
+        return blueprint
+    
     def rebuild_index(self):
         """Force rebuild the index (useful if schema changes)"""
         logger.info("🔄 Force rebuilding schema index...")
         
         # Delete existing collection
         try:
-            self.chroma_client.delete_collection("hospital_schema")
+            self.chroma_client.delete_collection("data_schema")
             logger.info("Deleted old collection")
         except:
             pass
         
         # Create new collection
         self.collection = self.chroma_client.create_collection(
-            name="hospital_schema",
+            name="data_schema",
             metadata={"hnsw:space": "cosine"}
         )
         
@@ -167,15 +255,14 @@ Common queries: SELECT from {table_name}, JOIN {table_name}, COUNT {table_name},
         
         relevant_schemas = []
         
-        if results and results['metadatas']:
-            for metadata in results['metadatas'][0]:
-                relevant_schemas.append({
-                    'table_name': metadata['table_name'],
-                    'columns': json.loads(metadata['columns']),
-                    'primary_keys': json.loads(metadata['primary_keys']),
-                    'foreign_keys': json.loads(metadata['foreign_keys']),
-                    'column_types': json.loads(metadata['column_types'])
-                })
+        for metadata in results['metadatas'][0]:
+            relevant_schemas.append({
+                'table_name': metadata['table_name'],
+                'columns': json.loads(metadata['columns']),
+                'primary_keys': json.loads(metadata['primary_keys']),
+                'foreign_keys': json.loads(metadata['foreign_keys']),
+                'column_types': json.loads(metadata['column_types'])
+            })
         
         return relevant_schemas
 
@@ -205,34 +292,28 @@ class SQLValidator:
         sql_upper = sql.upper()
         sql_lower = sql.lower()
         
-        # Extract table names from SQL
-        from_pattern = r'FROM\s+(\w+)'
-        join_pattern = r'JOIN\s+(\w+)'
+        # Extract table names from SQL (improved to ignore common aliases)
+        # Match FROM/JOIN followed by table name, but ignore if it's already in our set of valid tables in a case-insensitive way
+        from_pattern = r'FROM\s+([a-zA-Z0-9_]+)'
+        join_pattern = r'JOIN\s+([a-zA-Z0-9_]+)'
         
-        referenced_tables = set()
-        referenced_tables.update(re.findall(from_pattern, sql_upper))
-        referenced_tables.update(re.findall(join_pattern, sql_upper))
+        referenced_raw = set()
+        referenced_raw.update(re.findall(from_pattern, sql_upper))
+        referenced_raw.update(re.findall(join_pattern, sql_upper))
         
-        # Check if tables exist
-        for table in referenced_tables:
-            if table.lower() not in [t.lower() for t in self.valid_tables]:
+        # Filter out aliases by checking against valid_tables
+        # If a word is NOT in valid_tables, it might be an alias or a non-existent table
+        valid_lower = {t.lower() for t in self.valid_tables}
+        for table in referenced_raw:
+            if table.lower() not in valid_lower:
+                # If it's not a valid table, ensure no other part of the query used it as a table
+                # (Simple check: if it's an alias, the actual table should be somewhere else)
                 return False, f"Table '{table}' does not exist. Valid tables: {', '.join(self.valid_tables)}"
         
-        # Extract column references
-        column_pattern = r'(\w+)\.(\w+)'
-        table_column_refs = re.findall(column_pattern, sql_lower)
-        
-        for table, column in table_column_refs:
-            if table in [t.lower() for t in self.valid_tables]:
-                actual_table = next(t for t in self.valid_tables if t.lower() == table.lower())
-                
-                if column not in [c.lower() for c in self.table_columns[actual_table]]:
-                    return False, f"Column '{column}' does not exist in table '{actual_table}'. Valid columns: {', '.join(self.table_columns[actual_table])}"
-        
-        # Check for dangerous operations
+        # Check for dangerous operations using word boundaries to avoid false positives like 'created_at'
         dangerous_keywords = ['DROP', 'DELETE', 'TRUNCATE', 'ALTER', 'CREATE']
         for keyword in dangerous_keywords:
-            if keyword in sql_upper:
+            if re.search(rf'\b{keyword}\b', sql_upper):
                 return False, f"Dangerous operation '{keyword}' not allowed"
         
         # Check for LIMIT clause
@@ -253,10 +334,11 @@ def generate_sql_with_rag(
     question: str,
     schema_rag: SchemaRAG,
     validator: SQLValidator,
-    db_type: str = "mysql",  # NEW: Database type parameter
+    db_type: str = "mysql",
     limit: int = DEFAULT_QUERY_LIMIT,
     max_retries: int = 2,
-    history: List[Dict] = None  # NEW: History parameter
+    history: List[Dict] = None,
+    column_stats: dict = None  # NEW: per-table column statistics
 ) -> Dict:
     """
     Generate SQL using RAG-retrieved schema with validation and retry logic
@@ -302,7 +384,8 @@ def generate_sql_with_rag(
             db_type=db_type,
             limit=limit,
             last_error=last_error if attempt > 1 else None,
-            history=history  # Pass history to prompt builder
+            history=history,
+            column_stats=column_stats  # Pass value-aware stats
         )
         
         # Get LLM response
@@ -444,26 +527,36 @@ def clean_data_for_json(data):
 # PART 5: MAIN INTERFACE
 # ============================================
 
-# Initialize RAG system and validator (do this once at startup)
-schema_rag = SchemaRAG(engine, db)
-sql_validator = SQLValidator(engine)
+# Initialize RAG system and validator (do this only if engine is available)
+schema_rag = None
+sql_validator = None
+
+if engine:
+    try:
+        schema_rag = SchemaRAG(engine, db)
+        sql_validator = SQLValidator(engine)
+    except Exception as e:
+        logger.error(f"Failed to initialize RAG system: {e}")
 
 
-def hospital_sql_query_rag(
-    question: Annotated[str, "A question about the hospital database"],
+def default_sql_query_rag(
+    question: Annotated[str, "A question about the database"],
     limit: int = DEFAULT_QUERY_LIMIT
 ) -> Dict:
     """
     Main function: Generate and execute SQL using RAG + Validation
-    (Legacy function for hospital database - kept for backwards compatibility)
+    (Legacy function for default database - kept for backwards compatibility)
     """
+    if not schema_rag or not sql_validator:
+        return {"error": "Database not connected. Please connect a data source or upload a file."}
+        
     limit = min(limit, MAX_QUERY_LIMIT)
     
     return generate_sql_with_rag(
         question=question,
         schema_rag=schema_rag,
         validator=sql_validator,
-        db_type="mysql",  # Hospital DB is MySQL
+        db_type="mysql",  # Default DB is MySQL
         limit=limit,
         max_retries=2
     )
@@ -473,9 +566,10 @@ def generic_sql_query_rag(
     question: str,
     engine,
     db_type: str = "mysql",
-    source_id: str = "default",  # NEW: Source ID for unique collections
+    source_id: str = "default",
     limit: int = DEFAULT_QUERY_LIMIT,
-    history: List[Dict] = None  # NEW: History parameter
+    history: List[Dict] = None,
+    column_stats: dict = None  # NEW: value-aware column statistics
 ) -> Dict:
     """
     Generic function: Generate and execute SQL for ANY data source
@@ -487,12 +581,13 @@ def generic_sql_query_rag(
         source_id: Unique identifier for this data source (for schema caching)
         limit: Maximum rows to return
         history: List of previous Q&A pairs
+        column_stats: Per-table column statistics for value-aware SQL generation
     """
     limit = min(limit, MAX_QUERY_LIMIT)
     
     # Create unique collection name for this data source
     # This ensures each data source has its own schema index
-    collection_name = f"schema_{source_id.replace('-', '_')}"
+    collection_name = f"schema-{source_id}"
     
     # Create temporary SchemaRAG and Validator for this engine
     # Note: db parameter is not used in SchemaRAG, so we pass None
@@ -511,7 +606,8 @@ def generic_sql_query_rag(
         db_type=db_type,
         limit=limit,
         max_retries=2,
-        history=history  # Pass history
+        history=history,
+        column_stats=column_stats  # Pass through value-aware stats
     )
 
 
@@ -526,50 +622,8 @@ def rebuild_schema_index():
     print("✅ Schema index rebuilt successfully!")
 
 
-# ============================================
-# PART 6: TESTING
-# ============================================
-
-def test_rag_system():
-    """Test the RAG-enhanced system"""
-    test_questions = [
-        "How many patients do we have?"
-    ]
-    
-    print("=" * 60)
-    print("Testing RAG + Validation System")
-    print("=" * 60)
-    print()
-    
-    for i, question in enumerate(test_questions, 1):
-        print(f"\n{'='*60}")
-        print(f"Test {i}: {question}")
-        print(f"{'='*60}")
-        
-        result = hospital_sql_query_rag(question)
-        
-        if result.get("error"):
-            print(f"❌ FAILED: {result['error']}")
-        else:
-            print(f"✅ SUCCESS")
-            print(f"\n📊 Retrieved Tables: {', '.join(result.get('retrieved_tables', []))}")
-            print(f"\n🔍 SQL Query:")
-            print(f"   {result['query']}")
-            print(f"\n📈 Results: {result.get('row_count', 0)} rows")
-            chart = result.get('chart', {})
-            if chart:
-                print(f"📉 Chart Type: {chart.get('type', 'none')}")
-            else:
-                print(f"📉 Chart Type: none")
-            print(f"\n💡 Reasoning: {result.get('reasoning', 'N/A')}")
-            
-            if result.get('result'):
-                print(f"\n📋 Sample Data (first 3 rows):")
-                for row in result['result'][:3]:
-                    print(f"   {row}")
-        
-        print()
-
-
 if __name__ == "__main__":
-    test_rag_system()
+    if engine:
+        print("✅ Analytics Engine: Online")
+    else:
+        print("⚠️  Analytics Engine: File-Only Mode")

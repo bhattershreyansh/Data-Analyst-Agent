@@ -1,4 +1,6 @@
 import { useState, useCallback } from "react";
+import { useAuth } from "@clerk/react";
+import { dataSourcesAPI } from "@/lib/api";
 import { Upload, X, FileSpreadsheet, Loader2 } from "lucide-react";
 import {
     Dialog,
@@ -16,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 interface FileUploadDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSuccess?: () => void;
+    onSuccess?: (sourceId: string) => void;
 }
 
 export function FileUploadDialog({
@@ -24,6 +26,7 @@ export function FileUploadDialog({
     onOpenChange,
     onSuccess,
 }: FileUploadDialogProps) {
+    const { getToken } = useAuth();
     const [file, setFile] = useState<File | null>(null);
     const [name, setName] = useState("");
     const [uploading, setUploading] = useState(false);
@@ -97,22 +100,23 @@ export function FileUploadDialog({
         setUploading(true);
 
         try {
-            const formData = new FormData();
-            formData.append("file", file);
+            const uploadFormData = new FormData();
+            uploadFormData.append("file", file);
             if (name) {
-                formData.append("name", name);
+                uploadFormData.append("name", name);
             }
 
-            const response = await fetch("http://localhost:8000/data-sources/upload", {
-                method: "POST",
-                body: formData,
-            });
+            const token = await getToken();
+            const response = await dataSourcesAPI.uploadFile(uploadFormData, token);
 
-            if (response.ok) {
-                const data = await response.json();
+            if (response.success) {
+                const data = response.data;
+                const sheetInfo = data.table_count > 1 
+                    ? ` across ${data.table_count} sheets` 
+                    : '';
                 toast({
                     title: "File uploaded successfully",
-                    description: `${data.name} with ${data.row_count} rows loaded`,
+                    description: `${data.name} — ${data.row_count} rows${sheetInfo} loaded`,
                 });
 
                 // Reset form
@@ -121,11 +125,10 @@ export function FileUploadDialog({
                 onOpenChange(false);
 
                 if (onSuccess) {
-                    onSuccess();
+                    onSuccess(data.source_id);
                 }
             } else {
-                const error = await response.json();
-                throw new Error(error.detail || "Upload failed");
+                throw new Error(response.error || "Upload failed");
             }
         } catch (error) {
             toast({

@@ -1,0 +1,167 @@
+{
+  "eac44656-1cf3-47eb-9701-e7a1bf9b296c": {
+    "questions": [
+      {
+        "question": "What are the top 5 roles with the most users assigned in the last 30 days?",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify the most common roles in the organization and can inform decisions about role creation, modification, or deletion.",
+        "id": "q1",
+        "generated_at": "2026-03-27T14:40:43.282473"
+      },
+      {
+        "question": "Compare the number of documents submitted by active vs inactive users in the last quarter",
+        "category": "Comparison",
+        "chart_type": "pie",
+        "reasoning": "This question highlights the difference in document submission behavior between active and inactive users, which can help identify areas for improvement in user engagement.",
+        "id": "q2",
+        "generated_at": "2026-03-27T14:40:43.282483"
+      },
+      {
+        "question": "Show the distribution of content review statuses by compliance status",
+        "category": "Patterns",
+        "chart_type": "table",
+        "reasoning": "This question reveals the relationship between content review statuses and compliance statuses, which can help identify potential bottlenecks or areas for improvement in the content review process.",
+        "id": "q3",
+        "generated_at": "2026-03-27T14:40:43.282486"
+      },
+      {
+        "question": "List the top 10 users with the most social posts in the last 6 months",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question identifies the most active users in terms of social post creation, which can help inform decisions about user engagement, content creation, and social media strategy.",
+        "id": "q4",
+        "generated_at": "2026-03-27T14:40:43.282488"
+      },
+      {
+        "question": "What is the average time taken to review content by compliance status?",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question helps identify trends in content review time by compliance status, which can inform decisions about resource allocation, process optimization, and compliance strategy.",
+        "id": "q5",
+        "generated_at": "2026-03-27T14:40:43.282490"
+      },
+      {
+        "question": "Compare the number of documents with high, medium, and low compliance risk by quarter",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question highlights the trend of compliance risk over time, which can help identify areas for improvement in compliance processes and inform decisions about risk mitigation strategies.",
+        "id": "q6",
+        "generated_at": "2026-03-27T14:40:43.282491"
+      }
+    ],
+    "domain": "ecommerce",
+    "source_name": "Shreyansh Bhatter",
+    "timestamp": "2026-03-27T14:40:43.282671"
+  },
+  "f0db3eca-ec1a-4334-b2ce-45e65911c7c9": {
+    "questions": [
+      {
+        "question": "What are the top 5 products by total revenue in each region?",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify the best-selling products in each region, allowing for targeted marketing and inventory management.",
+        "id": "q1",
+        "generated_at": "2026-03-27T15:08:30.375613"
+      },
+      {
+        "question": "Compare average monthly sales between 2023 and 2024",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question reveals sales trends over time, enabling the identification of seasonal fluctuations and areas for improvement.",
+        "id": "q2",
+        "generated_at": "2026-03-27T15:08:30.375627"
+      },
+      {
+        "question": "Show the distribution of customer types by region",
+        "category": "Patterns",
+        "chart_type": "pie",
+        "reasoning": "This question provides insight into customer demographics, helping to tailor marketing strategies and improve customer satisfaction.",
+        "id": "q3",
+        "generated_at": "2026-03-27T15:08:30.375629"
+      },
+      {
+        "question": "Which salespeople have the highest average order value?",
+        "category": "Performance",
+        "chart_type": "table",
+        "reasoning": "This question evaluates salesperson performance, allowing for targeted training and incentives to boost sales.",
+        "id": "q4",
+        "generated_at": "2026-03-27T15:08:30.375631"
+      },
+      {
+        "question": "List the top 10 customers with the highest total spend",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question identifies the most valuable customers, enabling targeted loyalty programs and personalized marketing efforts.",
+        "id": "q5",
+        "generated_at": "2026-03-27T15:08:30.375633"
+      },
+      {
+        "question": "Show the average discount by product category",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question analyzes pricing strategies, helping to optimize discount policies and improve profit margins.",
+        "id": "q6",
+        "generated_at": "2026-03-27T15:08:30.375635"
+      }
+    ],
+    "domain": "ecommerce",
+    "source_name": "Product-Sales-Region.xlsx",
+    "timestamp": "2026-03-27T15:08:30.375819"
+  },
+  "d18c2e04-5eb6-482f-b377-e7d9371cba08": {
+    "questions": [
+      {
+        "question": "What are the top 5 products by total revenue in each region?",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify the best-selling products in each region, allowing for targeted marketing and inventory management.",
+        "id": "q1",
+        "generated_at": "2026-03-27T15:10:26.665216"
+      },
+      {
+        "question": "Compare average monthly sales between 2023 and 2024",
+        "category": "Comparison",
+        "chart_type": "line",
+        "reasoning": "This question enables the comparison of sales trends between two years, helping to identify growth or decline patterns.",
+        "id": "q2",
+        "generated_at": "2026-03-27T15:10:26.665228"
+      },
+      {
+        "question": "Show the distribution of customer types by region",
+        "category": "Patterns",
+        "chart_type": "pie",
+        "reasoning": "This question reveals the proportion of customer types in each region, informing marketing strategies and customer segmentation.",
+        "id": "q3",
+        "generated_at": "2026-03-27T15:10:26.665231"
+      },
+      {
+        "question": "Which salespeople have the highest average order value?",
+        "category": "Performance",
+        "chart_type": "table",
+        "reasoning": "This question identifies top-performing salespeople, allowing for recognition, training, and optimization of sales strategies.",
+        "id": "q4",
+        "generated_at": "2026-03-27T15:10:26.665233"
+      },
+      {
+        "question": "List the top 10 customers with the highest total spend",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question highlights the most valuable customers, enabling targeted loyalty programs and personalized marketing efforts.",
+        "id": "q5",
+        "generated_at": "2026-03-27T15:10:26.665236"
+      },
+      {
+        "question": "Show the trend of total sales by quarter over the past two years",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question illustrates the quarterly sales trend, helping to identify seasonal fluctuations and inform business forecasting and planning.",
+        "id": "q6",
+        "generated_at": "2026-03-27T15:10:26.665238"
+      }
+    ],
+    "domain": "ecommerce",
+    "source_name": "Product-Sales-Region.xlsx",
+    "timestamp": "2026-03-27T15:10:26.665417"
+  }
+}

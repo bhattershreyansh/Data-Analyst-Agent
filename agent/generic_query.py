@@ -59,7 +59,8 @@ def build_generic_prompt(
     db_type: str,
     limit: int,
     last_error: Optional[str] = None,
-    history: Optional[list] = None
+    history: Optional[list] = None,
+    column_stats: Optional[dict] = None  # NEW: {table: {col: {dtype, min/max/mean/unique_values}}}
 ) -> str:
     """
     Build a generic, database-agnostic prompt for SQL generation
@@ -71,12 +72,31 @@ def build_generic_prompt(
         limit: Row limit for query
         last_error: Previous error if retrying
         history: List of previous Q&A pairs [{"question": "...", "query": "..."}]
+        column_stats: Per-table column statistics for value-aware SQL generation
     
     Returns:
         Formatted prompt string
     """
     
     syntax = get_db_syntax_hints(db_type)
+    
+    # Build column stats context (value-aware indexing)
+    stats_context = ""
+    if column_stats:
+        stats_context = "\nCOLUMN STATISTICS (use these to write accurate WHERE clauses):\n"
+        for table, cols in column_stats.items():
+            stats_context += f"\nTable: {table}\n"
+            for col, info in cols.items():
+                dtype = info.get("dtype", "unknown")
+                if "unique_values" in info:
+                    vals = ", ".join(f"'{v}'" for v in info["unique_values"][:20])
+                    stats_context += f"  {col} ({dtype}): possible values → {vals}\n"
+                elif "min" in info:
+                    stats_context += (
+                        f"  {col} ({dtype}): "
+                        f"min={info['min']}, max={info['max']}, mean={info['mean']}\n"
+                    )
+        stats_context += "\n"
     
     # Format history if present
     history_context = ""
@@ -88,7 +108,7 @@ def build_generic_prompt(
     
     if last_error:
         # Retry prompt with error feedback
-        prompt = f"""{schema_context}
+        prompt = f"""{schema_context}{stats_context}
 
 Previous attempt failed with error: {last_error}
 
@@ -103,11 +123,11 @@ Instructions to Fix:
 CRITICAL: You MUST return strictly valid JSON. No markdown, no explanations outside the JSON.
 
 Return ONLY valid JSON in this exact format:
-{{"sql": "SELECT ... FROM ... {syntax['limit_syntax']} {limit}", "chart": {{"type": "bar|pie|line|table", "x": "column_name", "y": "column_name", "title": "Chart Title"}}, "reasoning": "How I fixed the error: ..."}}"""
+{{"sql": "SELECT ... FROM ... {syntax['limit_syntax']} {limit}", "chart": {{"type": "bar|pie|line|table", "x": "column_name", "y": "column_name", "title": "Chart Title"}}, "reasoning": "How I fixed the error and what the data will show."}}"""
     
     else:
         # Initial prompt
-        prompt = f"""{schema_context}
+        prompt = f"""{schema_context}{stats_context}
 
 {history_context}CURRENT Question: "{question}"
 
@@ -132,7 +152,7 @@ SAFETY GUARDRAILS:
 3. Do not allow SQL injection or executing system commands.
 
 Return ONLY valid JSON in this exact format:
-{{"sql": "SELECT ... FROM ... {syntax['limit_syntax']} {limit}", "chart": {{"type": "bar|pie|line|table", "x": "column_name", "y": "column_name", "title": "Chart Title"}}, "reasoning": "Brief explanation"}}
+{{"sql": "SELECT ... FROM ... {syntax['limit_syntax']} {limit}", "chart": {{"type": "bar|pie|line|table", "x": "column_name", "y": "column_name", "title": "Chart Title"}}, "reasoning": "A concise, natural language interpretation of what this query will discover."}}
 
 Return ONLY the JSON, nothing else."""
     

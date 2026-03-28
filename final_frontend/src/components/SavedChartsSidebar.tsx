@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth, useUser } from '@clerk/react';
 import { queryAPI, SavedChart } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -31,12 +32,18 @@ export function SavedChartsSidebar({
   selectedCharts,
   onChartToggle,
 }: SavedChartsSidebarProps) {
+  const { getToken } = useAuth();
+  const { user } = useUser();
+  const userId = user?.id;
   const queryClient = useQueryClient();
 
   const { data: charts, isLoading, error } = useQuery({
-    queryKey: ['saved-charts'],
+    // Include userId in the key — User B's query never hits User A's cache
+    queryKey: ['saved-charts', userId],
+    enabled: !!userId,
     queryFn: async () => {
-      const response = await queryAPI.getSavedCharts();
+      const token = await getToken();
+      const response = await queryAPI.getSavedCharts(token);
       if (response.success) {
         return response.data || [];
       } else {
@@ -51,14 +58,15 @@ export function SavedChartsSidebar({
 
   const deleteMutation = useMutation({
     mutationFn: async (chartId: string) => {
-      const response = await queryAPI.deleteSavedChart(chartId);
+      const token = await getToken();
+      const response = await queryAPI.deleteSavedChart(chartId, token);
       if (!response.success) {
         throw new Error(response.error || 'Failed to delete chart');
       }
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['saved-charts'] });
+      queryClient.invalidateQueries({ queryKey: ['saved-charts', userId] });
       toast.success('Chart deleted successfully');
     },
     onError: (error: any) => {
@@ -68,14 +76,15 @@ export function SavedChartsSidebar({
 
   const clearAllMutation = useMutation({
     mutationFn: async () => {
-      const response = await queryAPI.clearAllCharts();
+      const token = await getToken();
+      const response = await queryAPI.clearAllCharts(token);
       if (!response.success) {
         throw new Error(response.error || 'Failed to clear charts');
       }
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['saved-charts'] });
+      queryClient.invalidateQueries({ queryKey: ['saved-charts', userId] });
       toast.success('All charts cleared');
     },
     onError: (error: any) => {
@@ -160,7 +169,7 @@ export function SavedChartsSidebar({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => queryClient.invalidateQueries({ queryKey: ['saved-charts'] })}
+                      onClick={() => queryClient.invalidateQueries({ queryKey: ['saved-charts', userId] })}
                       className="mt-3"
                     >
                       Retry

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "@clerk/react";
+import { dataSourcesAPI } from "@/lib/api";
 import { Database, Loader2 } from "lucide-react";
 import {
     Dialog,
@@ -23,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 interface DatabaseConnectionDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSuccess?: () => void;
+    onSuccess?: (sourceId: string) => void;
 }
 
 export function DatabaseConnectionDialog({
@@ -31,6 +33,7 @@ export function DatabaseConnectionDialog({
     onOpenChange,
     onSuccess,
 }: DatabaseConnectionDialogProps) {
+    const { getToken } = useAuth();
     const [formData, setFormData] = useState({
         name: "",
         db_type: "postgresql",
@@ -72,19 +75,14 @@ export function DatabaseConnectionDialog({
         setConnecting(true);
 
         try {
-            const response = await fetch("http://localhost:8000/data-sources/database", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    port: parseInt(formData.port),
-                }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
+            const token = await getToken();
+            const response = await dataSourcesAPI.connectDatabase({
+                ...formData,
+                port: parseInt(formData.port),
+            }, token);
+            
+            if (response.success) {
+                const data = response.data;
                 toast({
                     title: "Database connected",
                     description: `${data.name} with ${data.table_count} tables connected successfully`,
@@ -103,11 +101,10 @@ export function DatabaseConnectionDialog({
                 onOpenChange(false);
 
                 if (onSuccess) {
-                    onSuccess();
+                    onSuccess(data.source_id);
                 }
             } else {
-                const error = await response.json();
-                throw new Error(error.detail || "Connection failed");
+                throw new Error(response.error || "Connection failed");
             }
         } catch (error) {
             toast({

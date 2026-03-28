@@ -1,74 +1,110 @@
 import { ReactNode, useState } from 'react';
-import { Moon, Sun, Sparkles } from 'lucide-react';
+import { useAuth } from "@clerk/react";
+import { useNavigate } from "react-router-dom";
+import { dataSourcesAPI } from "@/lib/api";
+import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useTheme } from '@/contexts/ThemeContext';
 import { Link } from 'react-router-dom';
 import { DataSourceSelector } from '@/components/DataSourceSelector';
 import { FileUploadDialog } from '@/components/FileUploadDialog';
 import { DatabaseConnectionDialog } from '@/components/DatabaseConnectionDialog';
+import { Show, UserButton, SignInButton } from "@clerk/react";
 
 interface HeaderProps {
   actions?: ReactNode;
 }
 
 export function Header({ actions }: HeaderProps) {
-  const { theme, toggleTheme } = useTheme();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
+   const [connectDialogOpen, setConnectDialogOpen] = useState(false);
+   const { getToken } = useAuth();
+   const navigate = useNavigate();
+
+   const handleSourceCreated = async (sourceId: string) => {
+     try {
+       const token = await getToken();
+       await dataSourcesAPI.activateSource(sourceId, token);
+       navigate("/analytics");
+     } catch (error) {
+       console.error("Failed to activate new source:", error);
+       // Still navigate even if activation fails, as it might have been activated by backend
+       navigate("/analytics");
+     }
+   };
 
   return (
     <>
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white shadow-md">
-              <Sparkles className="h-5 w-5" />
+      <header className="glass neon-border sticky top-0 z-50 transition-all duration-300">
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-4 group transition-all">
+            <div className="h-14 w-14 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+              <img src="/Futuristic Lumina AI logo design.png" alt="Lumina AI" className="h-full w-full object-contain drop-shadow-[0_0_15px_rgba(139,92,246,0.5)]" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
+            <div className="flex flex-col">
+              <h1 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 tracking-tighter">
                 Lumina AI
               </h1>
-              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Intelligent Insights</p>
+              <p className="text-[10px] text-primary font-bold uppercase tracking-[0.2em]">Private Intelligence</p>
             </div>
           </Link>
 
-          <nav className="flex items-center gap-2 sm:gap-4">
+          <nav className="flex items-center gap-3 sm:gap-6">
             {/* Page specific actions */}
             {actions && (
-              <div className="flex items-center gap-2 mr-2 border-r pr-4 border-border/50">
+              <div className="flex items-center gap-3 mr-3 border-r pr-6 border-white/10">
                 {actions}
               </div>
             )}
 
-            <Link to="/">
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
-                Analytics
-              </Button>
-            </Link>
-            <Link to="/dashboards">
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
-                Dashboards
-              </Button>
-            </Link>
+            <Show when="signed-in">
+              <div className="hidden md:flex items-center gap-2 mr-2">
+                <Link to="/analytics">
+                  <Button variant="ghost" size="sm" className="font-bold text-white/70 hover:text-primary hover:bg-primary/10 transition-all rounded-lg px-4">
+                    Analytics
+                  </Button>
+                </Link>
+                <Link to="/dashboards">
+                  <Button variant="ghost" size="sm" className="font-bold text-white/70 hover:text-accent hover:bg-accent/10 transition-all rounded-lg px-4">
+                    Dashboards
+                  </Button>
+                </Link>
+                <Link to="/blueprint">
+                  <Button variant="ghost" size="sm" className="font-bold text-white/70 hover:text-emerald-400 hover:bg-emerald-400/10 transition-all rounded-lg px-4">
+                    Blueprint
+                  </Button>
+                </Link>
+              </div>
+            </Show>
 
             {/* Data Source Selector */}
-            <DataSourceSelector
-              onUploadClick={() => setUploadDialogOpen(true)}
-              onConnectClick={() => setConnectDialogOpen(true)}
-            />
+            <Show when="signed-in">
+              <DataSourceSelector
+                onUploadClick={() => setUploadDialogOpen(true)}
+                onConnectClick={() => setConnectDialogOpen(true)}
+              />
+            </Show>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="rounded-full"
-            >
-              {theme === 'light' ? (
-                <Moon className="h-5 w-5" />
-              ) : (
-                <Sun className="h-5 w-5" />
-              )}
-            </Button>
+            <div className="flex items-center gap-3">
+              <Show when="signed-in">
+                <div className="pl-2 border-l border-white/10">
+                  <UserButton 
+                    appearance={{
+                      elements: {
+                        userButtonAvatarBox: "h-9 w-9 border-2 border-primary/30 shadow-lg shadow-primary/10"
+                      }
+                    }}
+                  />
+                </div>
+              </Show>
+              
+              <Show when="signed-out">
+                <SignInButton mode="modal">
+                  <Button size="sm" className="rounded-full px-6 font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                    Sign In
+                  </Button>
+                </SignInButton>
+              </Show>
+            </div>
           </nav>
         </div>
       </header>
@@ -77,16 +113,16 @@ export function Header({ actions }: HeaderProps) {
       <FileUploadDialog
         open={uploadDialogOpen}
         onOpenChange={setUploadDialogOpen}
-        onSuccess={() => {
-          // Refresh will happen automatically via polling in DataSourceSelector
+        onSuccess={(sourceId) => {
+          handleSourceCreated(sourceId);
         }}
       />
 
       <DatabaseConnectionDialog
         open={connectDialogOpen}
         onOpenChange={setConnectDialogOpen}
-        onSuccess={() => {
-          // Refresh will happen automatically via polling in DataSourceSelector
+        onSuccess={(sourceId) => {
+          handleSourceCreated(sourceId);
         }}
       />
     </>
