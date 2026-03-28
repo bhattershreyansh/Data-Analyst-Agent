@@ -146,5 +146,3 @@ npm run dev
 
 ---
 
-## ⚖️ License
-Enterprise Proprietary. Built by the Lumina AI Engineering Team.
