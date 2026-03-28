@@ -5,15 +5,18 @@ aiosqlite==0.21.0
 annotated-types==0.7.0
 anthropic==0.57.1
 anyio==4.9.0
+appnope==0.1.4
 asttokens==3.0.0
 attrs==25.3.0
 backoff==2.2.1
+backports.tarfile==1.2.0
 banks==2.1.3
 bcrypt==5.0.0
 beautifulsoup4==4.13.4
 build==1.3.0
 cachetools==6.2.0
 certifi==2025.6.15
+cffi==2.0.0
 charset-normalizer==3.4.2
 chromadb==1.1.0
 click==8.2.1
@@ -21,6 +24,7 @@ colorama==0.4.6
 coloredlogs==15.0.1
 comm==0.2.2
 copilotkit==0.1.39
+cryptography==46.0.6
 dataclasses-json==0.6.7
 debugpy==1.8.14
 decorator==5.2.1
@@ -28,6 +32,8 @@ Deprecated==1.2.18
 dirtyjson==1.0.8
 distro==1.9.0
 durationpy==0.10
+ecdsa==0.19.2
+et_xmlfile==2.0.0
 executing==2.2.0
 fastapi==0.115.14
 fastjsonschema==2.21.1
@@ -43,6 +49,7 @@ griffe==1.7.3
 groq==0.29.0
 grpcio==1.75.1
 h11==0.16.0
+hf-xet==1.4.2
 httpcore==1.0.9
 httptools==0.6.4
 httpx==0.27.2
@@ -55,6 +62,9 @@ importlib_resources==6.5.2
 ipykernel==6.29.5
 ipython==9.3.0
 ipython_pygments_lexers==1.1.1
+jaraco.classes==3.4.0
+jaraco.context==6.1.2
+jaraco.functools==4.4.0
 jedi==0.19.2
 Jinja2==3.1.6
 jiter==0.10.0
@@ -65,6 +75,7 @@ jsonschema==4.24.0
 jsonschema-specifications==2025.4.1
 jupyter_client==8.6.3
 jupyter_core==5.8.1
+keyring==25.7.0
 kubernetes==34.1.0
 langchain==0.3.26
 langchain-anthropic==0.3.17
@@ -103,11 +114,11 @@ marshmallow==3.26.1
 matplotlib-inline==0.1.7
 mdurl==0.1.2
 mmh3==5.2.0
+more-itertools==10.8.0
 mpmath==1.3.0
 multidict==6.6.3
 mypy_extensions==1.1.0
 mysql-connector-python==9.3.0
-python-jose[cryptography]
 narwhals==1.44.0
 nbformat==5.10.4
 nest-asyncio==1.6.0
@@ -116,8 +127,8 @@ nltk==3.9.1
 numpy==2.3.1
 oauthlib==3.3.1
 onnxruntime==1.23.0
-openpyxl==3.1.2
 openai==1.93.0
+openpyxl==3.1.2
 opentelemetry-api==1.37.0
 opentelemetry-exporter-otlp-proto-common==1.37.0
 opentelemetry-exporter-otlp-proto-grpc==1.37.0
@@ -131,6 +142,7 @@ packaging==24.2
 pandas==2.2.3
 parso==0.8.4
 partialjson==0.0.8
+pexpect==4.9.0
 pillow==11.3.0
 platformdirs==4.3.8
 plotly==6.2.0
@@ -139,10 +151,13 @@ prompt_toolkit==3.0.51
 propcache==0.3.2
 protobuf==6.32.1
 psutil==7.0.0
+psycopg2==2.9.11
+ptyprocess==0.7.0
 pure_eval==0.2.3
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pybase64==1.4.2
+pycparser==3.0
 pydantic==2.11.7
 pydantic-settings==2.10.1
 pydantic_core==2.33.2
@@ -153,6 +168,8 @@ pyproject_hooks==1.2.0
 pyreadline3==3.5.4
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
+python-jose==3.5.0
+python-multipart==0.0.22
 pytz==2025.2
 PyYAML==6.0.2
 pyzmq==27.0.0
@@ -168,7 +185,6 @@ safetensors==0.5.3
 scikit-learn==1.7.2
 scipy==1.16.2
 sentence-transformers==5.1.1
-setuptools==80.9.0
 shellingham==1.5.4
 six==1.17.0
 sniffio==1.3.1
@@ -195,6 +211,7 @@ typing_extensions==4.14.0
 tzdata==2025.2
 urllib3==2.3.0
 uvicorn==0.35.0
+uvloop==0.22.1
 watchfiles==1.1.0
 wcwidth==0.2.13
 websocket-client==1.8.0
