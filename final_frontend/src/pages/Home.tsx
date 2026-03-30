@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Sparkles, BarChart3, ShieldCheck, Zap, Database, Search, Layout, Share2 } from "lucide-react";
+import { Sparkles, BarChart3, ShieldCheck, Zap, Database, Search, Layout, Activity, Cpu, Globe } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SignInButton, Show } from "@clerk/react";
 import { Link } from "react-router-dom";
@@ -23,15 +23,15 @@ export default function Home() {
         >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-white/10 text-primary text-sm font-semibold mb-2 neon-glow">
             <Sparkles className="h-4 w-4" />
-            Lumina Intelligence Engine
+            The Future of Private Data Intelligence
           </div>
           
           <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-none text-white">
-            Data, <span className="text-neon">Demystified.</span>
+            Enterprise Data. <span className="text-neon">Solved.</span>
           </h1>
           
           <p className="text-xl md:text-2xl text-muted-foreground/80 max-w-3xl mx-auto leading-relaxed">
-            The most powerful private AI data analyst. Connect any source, ask any question, and watch your data come to life with instant, stunning visual insights.
+            The world's first autonomous forensic engine for your data. Connect any SQL database or Excel file and get root-cause insights in seconds—not days.
           </p>
 
           <div className="pt-4">
@@ -63,35 +63,35 @@ export default function Home() {
         >
           {[
             { 
-              icon: <Search className="h-6 w-6" />, 
-              title: "Natural Query", 
-              desc: "Ask questions in plain English. No SQL required.",
+              icon: <Activity className="h-6 w-6" />, 
+              title: "Causal Nexus", 
+              desc: "Autonomous forensic engine that investigates data anomalies to find the root cause.",
               color: "text-blue-400",
               bgColor: "bg-blue-400/10"
             },
             { 
-              icon: <BarChart3 className="h-6 w-6" />, 
-              title: "Dynamic Charts", 
-              desc: "Instant Plotly-powered visualizations from your data.",
+              icon: <Sparkles className="h-6 w-6" />, 
+              title: "Lumina Intelligence", 
+              desc: "Rich business narratives and trend detection for every single insight.",
               color: "text-primary",
               bgColor: "bg-primary/10"
             },
             { 
               icon: <Layout className="h-6 w-6" />, 
-              title: "The Sentinel Map", 
-              desc: "Live interactive schema blueprint of your entire ecosystem.",
+              title: "Sentinel Blueprint", 
+              desc: "Interactive card-grid map of your entire data ecosystem and semantic links.",
               color: "text-emerald-400",
               bgColor: "bg-emerald-400/10"
             },
             { 
-              icon: <ShieldCheck className="h-6 w-6" />, 
-              title: "Privacy First", 
-              desc: "Isolated sessions. Your data stays under your control.",
+              icon: <Globe className="h-6 w-6" />, 
+              title: "Universal Data", 
+              desc: "Native support for PostgreSQL, MySQL, SQL Server, Excel, and CSV.",
               color: "text-accent",
               bgColor: "bg-accent/10"
             }
           ].map((feature, i) => (
-            <div key={i} className="group p-8 rounded-3xl glass-card text-left space-y-4 hover:-translate-y-2 transition-all">
+            <div key={i} className="group p-8 rounded-3xl glass-card text-left space-y-4 hover:-translate-y-2 transition-all min-h-[220px]">
               <div className={`w-12 h-12 rounded-2xl ${feature.bgColor} flex items-center justify-center ${feature.color} border border-white/5 shadow-lg group-hover:scale-110 transition-transform`}>
                 {feature.icon}
               </div>
@@ -111,8 +111,8 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-20 items-center">
             <div className="text-left space-y-8">
               <h2 className="text-4xl font-bold text-white leading-tight">
-                Understand your database <br />
-                <span className="text-primary italic">at a glance.</span>
+                Beyond traditional analytics. <br />
+                <span className="text-primary italic">Deep structural awareness.</span>
               </h2>
               <div className="space-y-6">
                 <div className="flex gap-4">
@@ -120,8 +120,8 @@ export default function Home() {
                     <Check className="h-4 w-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-white">Sentinel Relationship Mapping</h4>
-                    <p className="text-sm text-muted-foreground">Automatically extract foreign keys and metadata to build a live architectural map.</p>
+                    <h4 className="font-bold text-white">Semantic Relationship Discovery</h4>
+                    <p className="text-sm text-muted-foreground">Lumina identifies "statistical links" in messy data even when foreign keys are missing.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -129,8 +129,8 @@ export default function Home() {
                     <Check className="h-4 w-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-white">Neural Vector Search</h4>
-                    <p className="text-sm text-muted-foreground">Ask conceptual questions like "Who are my top VIP customers?" and let AI find the right tables.</p>
+                    <h4 className="font-bold text-white">Iterative Forensic Sprints</h4>
+                    <p className="text-sm text-muted-foreground">The engine sleuths through your database, automatically drilling down until the evidence is conclusive.</p>
                   </div>
                 </div>
               </div>
@@ -141,7 +141,7 @@ export default function Home() {
               <div className="glass-card p-4 rounded-3xl border border-white/10 relative z-10">
                 <div className="aspect-video rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center overflow-hidden">
                    <div className="text-primary/20 animate-pulse">
-                     <Database className="h-24 w-24" />
+                     <Cpu className="h-24 w-24" />
                    </div>
                 </div>
               </div>
