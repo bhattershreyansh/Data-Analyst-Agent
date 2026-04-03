@@ -4,18 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import Analytics from "./pages/Analytics";
 import Dashboards from "./pages/Dashboards";
 import DashboardView from "./pages/DashboardView";
 import SchemaBlueprint from "./pages/SchemaBlueprint";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
-import { Show, SignInButton, UserButton } from "@clerk/react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Sparkles, BarChart3, ShieldCheck, Zap } from "lucide-react";
+import { Show, RedirectToSignIn, useAuth } from "@clerk/react";
+import { Footer } from "@/components/Footer";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,15 +22,24 @@ const queryClient = new QueryClient({
   },
 });
 
+// Redirects already-signed-in users away from the landing page
+const HomeOrRedirect = () => {
+  const { isSignedIn, isLoaded } = useAuth();
+  if (!isLoaded) return null; // Wait for Clerk to load
+  if (isSignedIn) return <Navigate to="/analytics" replace />;
+  return <Home />;
+};
+
+// Wraps a page so that unauthenticated users are sent to Clerk sign-in
+const Protected = ({ children }: { children: React.ReactNode }) => (
+  <>
+    <Show when="signed-in">{children}</Show>
+    <Show when="signed-out"><RedirectToSignIn /></Show>
+  </>
+);
+
 const ProtectedNotFound = () => (
-    <>
-      <Show when="signed-in">
-        <NotFound />
-      </Show>
-      <Show when="signed-out">
-        <Navigate to="/" replace />
-      </Show>
-    </>
+  <Protected><NotFound /></Protected>
 );
 
 const App = () => (
@@ -47,27 +52,11 @@ const App = () => (
           <div className="min-h-screen flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
             <main className="flex-grow">
               <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/analytics" element={
-                  <Show when="signed-in">
-                    <Analytics />
-                  </Show>
-                } />
-                <Route path="/dashboards" element={
-                  <Show when="signed-in">
-                    <Dashboards />
-                  </Show>
-                } />
-                <Route path="/dashboard/:id" element={
-                  <Show when="signed-in">
-                    <DashboardView />
-                  </Show>
-                } />
-                <Route path="/blueprint" element={
-                  <Show when="signed-in">
-                    <SchemaBlueprint />
-                  </Show>
-                } />
+                <Route path="/" element={<HomeOrRedirect />} />
+                <Route path="/analytics" element={<Protected><Analytics /></Protected>} />
+                <Route path="/dashboards" element={<Protected><Dashboards /></Protected>} />
+                <Route path="/dashboard/:id" element={<Protected><DashboardView /></Protected>} />
+                <Route path="/blueprint" element={<Protected><SchemaBlueprint /></Protected>} />
                 <Route path="*" element={<ProtectedNotFound />} />
               </Routes>
             </main>
