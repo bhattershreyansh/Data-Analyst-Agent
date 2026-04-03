@@ -228,31 +228,44 @@ export default function SchemaBlueprint() {
               </div>
             ) : (
               <div>
-                {/* Header hint */}
-                <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground/50">
-                  <Info className="h-3.5 w-3.5" />
-                  <span>Click a table to inspect its columns and connections. Click again to deselect.</span>
-                </div>
+                {/* Empty state when no table is selected */}
+                {!selectedTable ? (
+                  <div className="h-full flex flex-col items-center justify-center gap-4 select-none">
+                    <div className="h-20 w-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center">
+                      <TableIcon className="h-9 w-9 text-muted-foreground/30" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-white/30">No table selected</p>
+                      <p className="text-sm text-muted-foreground/40 mt-1">Choose a table from the sidebar to view its schema</p>
+                    </div>
+                  </div>
+                ) : (
+                <div>
+                  {/* Header hint */}
+                  <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground/50">
+                    <Info className="h-3.5 w-3.5" />
+                    <span>Inspecting <span className="text-primary font-bold">{selectedTable}</span>. Click it again to deselect.</span>
+                  </div>
 
-                {/* Table Cards Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {filteredTables.map((table, idx) => {
-                    const relations = getRelatedTables(table.name);
-                    const isSelected = selectedTable === table.name;
-                    const isExpanded = expandedTables.has(table.name);
-                    const isNeighbor = selectedTable !== null && relations.some(r => r.neighbor === selectedTable);
-                    const isUnrelated = selectedTable !== null && !isSelected && !isNeighbor;
+                  {/* Table Cards Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredTables.map((table, idx) => {
+                      const relations = getRelatedTables(table.name);
+                      const isSelected = selectedTable === table.name;
+                      const isExpanded = expandedTables.has(table.name);
+                      const isNeighbor = selectedTable !== null && relations.some(r => r.neighbor === selectedTable);
+                      const isUnrelated = selectedTable !== null && !isSelected && !isNeighbor;
 
-                    return (
-                      <motion.div
-                        key={table.name}
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ 
-                          opacity: isUnrelated ? 0.3 : 1, 
-                          y: 0,
-                          scale: isSelected ? 1.02 : 1  
-                        }}
-                        transition={{ delay: idx * 0.02, duration: 0.25 }}
+                      return (
+                        <motion.div
+                          key={table.name}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ 
+                            opacity: isUnrelated ? 0.2 : 1, 
+                            y: 0,
+                            scale: isSelected ? 1.02 : 1  
+                          }}
+                          transition={{ delay: idx * 0.02, duration: 0.25 }}
                         className={cn(
                           "rounded-2xl border p-4 flex flex-col gap-3 cursor-pointer transition-all",
                           isSelected
@@ -337,9 +350,11 @@ export default function SchemaBlueprint() {
                           </div>
                         )}
                       </motion.div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
+                )}
               </div>
             )}
           </div>
@@ -415,6 +430,23 @@ export default function SchemaBlueprint() {
                   </div>
                 )}
               </motion.aside>
+            )}
+          </AnimatePresence>
+
+          {/* Empty state hint when blueprint loaded but nothing selected */}
+          <AnimatePresence>
+            {blueprint && !selectedTable && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-none"
+              >
+                <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-sm text-muted-foreground shadow-2xl">
+                  <TableIcon className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span>Select a table from the grid to inspect its columns and connections</span>
+                </div>
+              </motion.div>
             )}
           </AnimatePresence>
         </section>

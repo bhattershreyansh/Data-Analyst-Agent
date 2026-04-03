@@ -7,12 +7,15 @@ from typing import List, Dict, Optional
 from sqlalchemy import inspect
 import logging
 from datetime import datetime
-from llama_index.llms.groq import Groq
-
+from langchain_groq import ChatGroq
+from langchain_core.messages import HumanMessage
+import os
+from dotenv import load_dotenv
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 # Initialize LLM
-groq_llm = Groq(model="llama-3.3-70b-versatile")
+groq_llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY"))
 
 
 def analyze_schema(engine, db_type: str = "mysql") -> Dict:
@@ -202,7 +205,7 @@ Return ONLY a valid JSON array with this exact format:
 Return ONLY the JSON array, nothing else."""
 
     try:
-        response = groq_llm.complete(prompt).text.strip()
+        response = groq_llm.invoke([HumanMessage(content=prompt)]).content.strip()
         
         # Extract JSON from response
         import json

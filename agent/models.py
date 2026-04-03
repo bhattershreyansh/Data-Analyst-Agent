@@ -64,7 +64,8 @@ class DataSource(Base):
     user = relationship("User", back_populates="data_sources")
 
 # Database setup
-DATABASE_URL = os.getenv("METADATA_DATABASE_URL", "sqlite:///./metadata.db")
+# Support both METADATA_DATABASE_URL and DATABASE_URL env var names
+DATABASE_URL = os.getenv("METADATA_DATABASE_URL") or os.getenv("DATABASE_URL", "sqlite:///./metadata.db")
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

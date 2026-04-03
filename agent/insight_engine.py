@@ -1,14 +1,16 @@
+from langchain_groq import ChatGroq
+from langchain_core.messages import HumanMessage
 import logging
 import json
 import re
 from typing import List, Dict, Any, Optional
-from llama_index.llms.groq import Groq
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 # Initialize LLM for insights
-insight_llm = Groq(model="llama-3.3-70b-versatile")
+insight_llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY"))
 
 class InsightEngine:
     def __init__(self):
@@ -62,7 +64,7 @@ INSTRUCTIONS:
 Return ONLY the bullet points, no preamble."""
 
         try:
-            response = insight_llm.complete(prompt).text.strip()
+            response = insight_llm.invoke([HumanMessage(content=prompt)]).content.strip()
             return response
         except Exception as e:
             logger.error(f"Error generating narrative: {e}")
@@ -90,7 +92,7 @@ RULES:
 Example: ["What is the regional breakdown for these sales?", "Are there any seasonal trends in this data?", "Which products have the lowest margin in this set?"]"""
 
         try:
-            response = insight_llm.complete(prompt).text.strip()
+            response = insight_llm.invoke([HumanMessage(content=prompt)]).content.strip()
             # Extract JSON list using regex if needed
             match = re.search(r'\[.*\]', response, re.DOTALL)
             if match:

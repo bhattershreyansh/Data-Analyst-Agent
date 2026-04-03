@@ -7,7 +7,11 @@ from langgraph.graph import StateGraph, END
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 import pandas as pd
-from agnet_rag import engine as global_engine
+from agnet_rag import get_engine as _get_engine
+import os
+from dotenv import load_dotenv
+load_dotenv()
+global_engine = _get_engine()  # Lazy-loaded on first use
 
 logger = logging.getLogger(__name__)
 

@@ -10,13 +10,26 @@ import json
 from pathlib import Path
 import shutil
 from sqlalchemy import inspect
+import os   
+
 
 # Import SQLAlchemy models & setup
 from models import SessionLocal, init_db, User, SavedChart as DBCart, Dashboard as DBDashboard, DataSource as DBDataSource
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
+load_dotenv()
 
 # Import your RAG system
-from agnet_rag import default_sql_query_rag, generic_sql_query_rag, schema_rag, rebuild_schema_index, SchemaRAG
+from agnet_rag import (
+    default_sql_query_rag, 
+    generic_sql_query_rag, 
+    get_schema_rag, 
+    get_engine, 
+    get_db,
+    rebuild_schema_index, 
+    SchemaRAG,
+    generate_sql_with_rag_lazy
+)
 
 # Import caching
 from caching import cache_manager
@@ -343,7 +356,9 @@ def initialize_demo_mode():
             return
         
         # Add the hardcoded hospital database as a demo source
-        from agnet_rag import engine, db
+        from agnet_rag import get_engine, get_db
+        engine = get_engine()
+        db = get_db()
         
         # Manually add to data source manager with fixed ID
         inspector = inspect(engine)
@@ -384,7 +399,7 @@ async def health():
         timestamp=datetime.now(),
         saved_charts_count=len(saved_charts),
         saved_dashboards_count=len(saved_dashboards),
-        schema_index_count=schema_rag.collection.count()  # Show ChromaDB size
+        schema_index_count=get_schema_rag().get_count()  # Show ChromaDB size
     )
 
 
@@ -435,11 +450,15 @@ async def get_mode_status(
 @app.get("/schema/info", response_model=SchemaInfo)
 async def get_schema_info():
     """NEW: Get schema indexing information"""
+    # Use lazy loading for health check
+    rag = get_schema_rag()
+    engine = get_engine()
+    
     return SchemaInfo(
-        total_tables=len(schema_rag.inspector.get_table_names()),
-        indexed=schema_rag.collection.count() > 0,
-        collection_count=schema_rag.collection.count(),
-        persist_directory=schema_rag.persist_directory
+        total_tables=len(rag.inspector.get_table_names()) if rag.inspector else 0,
+        indexed=rag.get_count() > 0,
+        collection_count=rag.get_count(),
+        persist_directory=rag.get_persist_directory()
     )
 
 
@@ -453,7 +472,7 @@ async def rebuild_schema():
             content={
                 "success": True,
                 "message": "Schema index rebuilt successfully",
-                "collection_count": schema_rag.collection.count()
+                "collection_count": get_schema_rag().get_count()
             },
             status_code=200
         )
@@ -656,9 +675,9 @@ async def get_data_source_schema(
         engine = source["engine"]
         temp_schema_rag = SchemaRAG(
             engine, 
-            None, 
-            persist_directory="./chroma_db",
-            collection_name=f"schema-{source_id}"
+            None,
+            index_name=os.getenv("PINECONE_INDEX_NAME", "lumina-ai"),
+            namespace=f"source-{source_id}"
         )
         
         blueprint = temp_schema_rag.get_blueprint()
@@ -1044,9 +1063,9 @@ async def diagnose_anomaly(
                 collection_name = f"schema-{active_source_id}"
                 temp_schema_rag = SchemaRAG(
                     active_engine, 
-                    None, 
-                    persist_directory="./chroma_db",
-                    collection_name=collection_name
+                    None,
+                    index_name=os.getenv("PINECONE_INDEX_NAME", "lumina-ai"),
+                    namespace=f"source-{active_source_id}"
                 )
                 blueprint = temp_schema_rag.get_blueprint()
                 
@@ -1066,12 +1085,13 @@ async def diagnose_anomaly(
         
         # Fallback to global schema_rag if no active source or blueprint failed
         if not blueprint:
-            if schema_rag:
-                blueprint = schema_rag.get_blueprint()
+            rag = get_schema_rag()
+            if rag:
+                blueprint = rag.get_blueprint()
                 
                 # Pre-filter fallback blueprint too
                 if blueprint and len(blueprint.get("tables", [])) > 5:
-                    relevant_schemas = schema_rag.retrieve_relevant_tables(request.question, top_k=5)
+                    relevant_schemas = rag.retrieve_relevant_tables(request.question, top_k=5)
                     relevant_table_names = set(s["table_name"] for s in relevant_schemas)
                     if relevant_table_names:
                         blueprint["tables"] = [t for t in blueprint["tables"] if t["name"] in relevant_table_names]
@@ -1339,23 +1359,16 @@ async def general_exception_handler(request, exc):
 
 @app.on_event("startup")
 async def startup_event():
-    """Startup event"""
-    # Initialize JSON to SQL database
+    """Startup event - kept lightweight for Render"""
+    # Initialize JSON to SQL database (metadata)
     init_db()
-    logger.info("🗄️  SQL Database Initialized")
+    logger.info("🗄️  Metadata Database Initialized")
     
-    # Sync data sources
+    # We DON'T initialize the RAG engine here to avoid blocking port binding
+    logger.info("🚀 Enterprise Analytics API Started (Lazy Mode)")
+    
+    # Sync data sources (this is lightweight)
     sync_data_sources_from_db()
-    logger.info("🔄 Data Sources Re-hydrated")
-    
-    logger.info("🚀 Enterprise Analytics API Started")
-    logger.info(f"📊 Loaded {len(saved_charts)} saved charts")
-    logger.info(f"📈 Loaded {len(saved_dashboards)} saved dashboards")
-    if schema_rag:
-        logger.info(f"🗂️  ChromaDB Index: {schema_rag.collection.count()} tables indexed")
-        logger.info(f"💾 Persist Directory: {schema_rag.persist_directory}")
-    else:
-        logger.warning("🗂️  ChromaDB Index: Not initialized (Database connection skipped)")
     
     # Initialize demo mode
     initialize_demo_mode()

@@ -1,17 +1,20 @@
-import os
-from dotenv import load_dotenv
-from sqlalchemy import create_engine, inspect
-import pandas as pd
-import json
-from typing import List, Dict, Tuple
-from typing_extensions import Annotated
-from llama_index.llms.groq import Groq
-import re
-from langchain_community.utilities import SQLDatabase
-import numpy as np
 import logging
-import chromadb
+import json
+import os
+from typing import List, Dict, Tuple, Optional, Annotated
+from dotenv import load_dotenv
+from pinecone import Pinecone
+from langchain_openai import OpenAIEmbeddings
+from sqlalchemy import create_engine, inspect
+from langchain_community.utilities import SQLDatabase
+from langchain_groq import ChatGroq
+from langchain_core.messages import HumanMessage
 from pathlib import Path
+import re
+import pandas as pd
+import numpy as np
+
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -20,31 +23,60 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-# Database configuration
-user = "myuser"
-password = "mypassword"
-host = "localhost"
-db_name = "analytics_db"
+# Global connection variables
+_engine = None
+_db = None
+_schema_rag = None
 
-# Connect to the database (Optional for demo)
-db = None
-engine = None
+def get_engine():
+    """Lazy initialization of the database engine to prevent Render startup hangs"""
+    global _engine
+    if _engine is not None:
+        return _engine
+        
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        # Fallback to local config for dev
+        user = "myuser"
+        password = "mypassword"
+        host = "localhost"
+        db_name = "analytics_db"
+        db_url = f"mysql+mysqlconnector://{user}:{password}@{host}/{db_name}"
+    
+    try:
+        _engine = create_engine(db_url)
+        # Test connection briefly
+        with _engine.connect() as conn:
+            logger.info("✅ Database Engine Initialized")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not connect to database: {e}")
+        _engine = None
+    return _engine
 
-try:
-    db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}/{db_name}"
-    engine = create_engine(db_uri)
-    # Test connection
-    with engine.connect() as conn:
-        logger.info("✅ Successfully connected to MySQL database")
-    db = SQLDatabase.from_uri(db_uri)
-except Exception as e:
-    logger.warning(f"⚠️  Could not connect to MySQL database: {e}")
-    logger.warning("Agent will run in 'File-Only' mode for now.")
-    engine = None
-    db = None
+def get_db():
+    """Lazy initialization of the SQLDatabase wrapper"""
+    global _db
+    if _db is not None:
+        return _db
+    
+    engine = get_engine()
+    if engine:
+        try:
+            db_url = os.getenv("DATABASE_URL")
+            if not db_url:
+                user = "myuser"
+                password = "mypassword"
+                host = "localhost"
+                db_name = "analytics_db"
+                db_url = f"mysql+mysqlconnector://{user}:{password}@{host}/{db_name}"
+            _db = SQLDatabase.from_uri(db_url)
+        except Exception as e:
+            logger.error(f"Failed to wrap DB: {e}")
+            _db = None
+    return _db
 
 # Initialize LLM
-groq_llm = Groq(model="llama-3.3-70b-versatile")
+groq_llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY"))
 DEFAULT_QUERY_LIMIT = 20
 MAX_QUERY_LIMIT = 100
 
@@ -54,48 +86,51 @@ MAX_QUERY_LIMIT = 100
 # ============================================
 
 class SchemaRAG:
-    def __init__(self, engine, db, persist_directory="./chroma_db", collection_name="data_schema"):
+    def __init__(self, engine, db, index_name="lumina-ai", namespace="lumina-ai"):
         self.engine = engine
         self.db = db
-        self.inspector = inspect(engine)
-        self.persist_directory = persist_directory
-        self.collection_name = collection_name  # NEW: Dynamic collection name
+        self.inspector = inspect(engine) if engine else None
+        self.index_name = index_name
+        self.namespace = namespace
         
-        # Create persist directory if it doesn't exist
-        Path(persist_directory).mkdir(parents=True, exist_ok=True)
+        # Initialize OpenAI Embeddings (Support both standard and user's env names)
+        openai_key = os.getenv("OPEN_AI_API_KEY") or os.getenv("OPENAI_API_KEY")
+        self.embeddings = OpenAIEmbeddings(
+            model="text-embedding-3-small",
+            openai_api_key=openai_key
+        )
         
-        # Initialize ChromaDB with persistence
-        self.chroma_client = chromadb.PersistentClient(path=persist_directory)
+        # Initialize Pinecone
+        api_key = os.getenv("PINECONE_API_KEY")
+        if not api_key:
+            logger.error("❌ PINECONE_API_KEY not found in environment")
+            return
+
+        self.pc = Pinecone(api_key=api_key)
+        self.index = self.pc.Index(index_name)
         
-        # Try to get existing collection
+        # Check if index needs building (approximate via empty check)
         try:
-            self.collection = self.chroma_client.get_collection(collection_name)
-            
-            # Check if collection has data
-            if self.collection.count() == 0:
-                logger.info(f"Collection '{collection_name}' exists but is empty, building schema index...")
-                self._build_schema_index()
+            stats = self.index.describe_index_stats()
+            count = stats.namespaces.get(namespace, {}).get("vector_count", 0)
+            if count == 0:
+                logger.info(f"🚀 Pinecone namespace '{namespace}' is empty, building schema index...")
+                if self.engine:
+                    self._build_schema_index()
             else:
-                logger.info(f"✅ Using existing collection '{collection_name}' with {self.collection.count()} items")
-                
+                logger.info(f"✅ Using existing Pinecone index '{index_name}' with {count} tables")
         except Exception as e:
-            # Collection doesn't exist, create it
-            logger.info(f"Creating new collection '{collection_name}' and building schema index...")
-            self.collection = self.chroma_client.create_collection(
-                name=collection_name,
-                metadata={"hnsw:space": "cosine"}
-            )
-            self._build_schema_index()
-    
+            logger.error(f"Failed to connect to Pinecone: {e}")
+
     def _build_schema_index(self):
-        """Extract schema and create embeddings"""
-        logger.info("🔨 Building schema index...")
-        
+        """Extract schema and create embeddings for Pinecone"""
+        if not self.inspector:
+            return
+
+        logger.info("🔨 Building Cloud Schema Index (Pinecone)...")
         table_names = self.inspector.get_table_names()
         
-        documents = []
-        metadatas = []
-        ids = []
+        vectors = []
         
         for idx, table_name in enumerate(table_names):
             # Get columns
@@ -128,25 +163,25 @@ Column Details:
 
 Common queries: SELECT from {table_name}, JOIN {table_name}, COUNT {table_name}, GROUP BY {table_name}
 """
+            # Create embedding
+            embedding = self.embeddings.embed_query(doc)
             
-            documents.append(doc)
-            metadatas.append({
-                'table_name': table_name,
-                'columns': json.dumps(column_names),
-                'primary_keys': json.dumps(primary_keys),
-                'foreign_keys': json.dumps(foreign_keys),
-                'column_types': json.dumps(column_types)
+            vectors.append({
+                "id": f"table_{table_name}",
+                "values": embedding,
+                "metadata": {
+                    'table_name': table_name,
+                    'columns': json.dumps(column_names),
+                    'primary_keys': json.dumps(primary_keys),
+                    'foreign_keys': json.dumps(foreign_keys),
+                    'column_types': json.dumps(column_types)
+                }
             })
-            ids.append(f"table_{idx}")
-        
-        # Add to ChromaDB
-        self.collection.add(
-            documents=documents,
-            metadatas=metadatas,
-            ids=ids
-        )
-        
-        logger.info(f"✅ Indexed {len(table_names)} tables successfully!")
+
+        # Upsert to Pinecone
+        if vectors:
+            self.index.upsert(vectors=vectors, namespace=self.namespace)
+            logger.info(f"✅ Successfully indexed {len(vectors)} tables in namespace '{self.namespace}'!")
     
     def get_blueprint(self) -> Dict:
         """
@@ -246,16 +281,21 @@ Common queries: SELECT from {table_name}, JOIN {table_name}, COUNT {table_name},
         self._build_schema_index()
     
     def retrieve_relevant_tables(self, question: str, top_k: int = 3) -> List[Dict]:
-        """Retrieve most relevant table schemas for a question"""
+        """Retrieve most relevant table schemas for a question from Pinecone"""
+        # Embed question
+        query_vector = self.embeddings.embed_query(question)
         
-        results = self.collection.query(
-            query_texts=[question],
-            n_results=min(top_k, self.collection.count())
+        # Query Pinecone
+        results = self.index.query(
+            vector=query_vector,
+            top_k=top_k,
+            namespace=self.namespace,
+            include_metadata=True
         )
         
         relevant_schemas = []
-        
-        for metadata in results['metadatas'][0]:
+        for match in results['matches']:
+            metadata = match['metadata']
             relevant_schemas.append({
                 'table_name': metadata['table_name'],
                 'columns': json.loads(metadata['columns']),
@@ -265,6 +305,18 @@ Common queries: SELECT from {table_name}, JOIN {table_name}, COUNT {table_name},
             })
         
         return relevant_schemas
+
+    def get_count(self) -> int:
+        """Get the number of indexed tables from Pinecone stats"""
+        try:
+            stats = self.index.describe_index_stats()
+            return stats.namespaces.get(self.namespace, {}).get("vector_count", 0)
+        except:
+            return 0
+
+    def get_persist_directory(self) -> str:
+        """Backward compatibility for metadata display"""
+        return f"Pinecone Index: {self.index_name}"
 
 
 # ============================================
@@ -389,7 +441,7 @@ def generate_sql_with_rag(
         )
         
         # Get LLM response
-        response = groq_llm.complete(prompt).text.strip()
+        response = groq_llm.invoke([HumanMessage(content=prompt)]).content.strip()
         logger.info(f"Attempt {attempt} - LLM Response: {response[:200]}...")
         
         # Extract JSON
@@ -523,40 +575,70 @@ def clean_data_for_json(data):
         return str(data)
 
 
+def get_schema_rag():
+    """Lazy initialization of the SchemaRAG system"""
+    global _schema_rag
+    if _schema_rag is not None:
+        return _schema_rag
+    
+    engine = get_engine()
+    db = get_db()
+    
+    # We always initialize it, even if engine is None (it will just be in 'empty' mode)
+    _schema_rag = SchemaRAG(engine=engine, db=db)
+    return _schema_rag
+
+# ============================================
+# PART 3: MAIN RAG WRAPPERS (Lazy versions)
+# ============================================
+
+def schema_rag(question: str):
+    """Refactored to use lazy loading"""
+    rag = get_schema_rag()
+    return rag.retrieve_relevant_tables(question)
+
+def default_sql_query_rag(question: str, limit: int = 5):
+    """Refactored to use lazy loading"""
+    engine = get_engine()
+    db = get_db()
+    rag = get_schema_rag()
+    
+    if not db or not engine:
+        return "Database not connected. Please upload a file or connect a database."
+        
+    return generic_sql_query_rag(question, engine, db, rag, limit=limit)
+
+
 # ============================================
 # PART 5: MAIN INTERFACE
 # ============================================
 
-# Initialize RAG system and validator (do this only if engine is available)
-schema_rag = None
-sql_validator = None
+# ============================================
+# PART 5: MAIN INTERFACE
+# ============================================
 
-if engine:
-    try:
-        schema_rag = SchemaRAG(engine, db)
-        sql_validator = SQLValidator(engine)
-    except Exception as e:
-        logger.error(f"Failed to initialize RAG system: {e}")
+def get_sql_validator():
+    """Lazy initialization of the SQL Validator"""
+    engine = get_engine()
+    if engine:
+        return SQLValidator(engine)
+    return None
 
-
-def default_sql_query_rag(
-    question: Annotated[str, "A question about the database"],
-    limit: int = DEFAULT_QUERY_LIMIT
-) -> Dict:
-    """
-    Main function: Generate and execute SQL using RAG + Validation
-    (Legacy function for default database - kept for backwards compatibility)
-    """
-    if not schema_rag or not sql_validator:
-        return {"error": "Database not connected. Please connect a data source or upload a file."}
+def generate_sql_with_rag_lazy(question: str, db_type: str = "mysql", limit: int = 5):
+    """Refactored to use lazy loading for everything"""
+    rag = get_schema_rag()
+    validator = get_sql_validator()
+    
+    if not rag or not validator:
+        return {"success": False, "error": "Database not connected. Please connect a source."}
         
-    limit = min(limit, MAX_QUERY_LIMIT)
+    limit = min(limit, 100)
     
     return generate_sql_with_rag(
         question=question,
-        schema_rag=schema_rag,
-        validator=sql_validator,
-        db_type="mysql",  # Default DB is MySQL
+        schema_rag=rag,
+        validator=validator,
+        db_type=db_type,
         limit=limit,
         max_retries=2
     )
@@ -593,9 +675,9 @@ def generic_sql_query_rag(
     # Note: db parameter is not used in SchemaRAG, so we pass None
     temp_schema_rag = SchemaRAG(
         engine, 
-        None, 
-        persist_directory="./chroma_db",
-        collection_name=collection_name  # Unique collection per source
+        None,
+        index_name=os.getenv("PINECONE_INDEX_NAME", "lumina-ai"),
+        namespace=f"source-{source_id}"
     )
     temp_validator = SQLValidator(engine)
     
