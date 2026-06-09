@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/react";
-import { Database, Upload, Plus, Check, X } from "lucide-react";
+import { Database, Upload, Plus, Check, X, Folder } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
     DropdownMenu,
@@ -131,7 +131,11 @@ export function DataSourceSelector({ onUploadClick, onConnectClick }: {
 
 
     const getSourceIcon = (type: string) => {
-        return type === "database" ? "🗄️" : "📁";
+        return type === "database" ? (
+            <Database className="h-4 w-4 inline-block text-primary" />
+        ) : (
+            <Folder className="h-4 w-4 inline-block text-primary" />
+        );
     };
 
     const getModeColor = (mode: string) => {
@@ -181,7 +185,7 @@ export function DataSourceSelector({ onUploadClick, onConnectClick }: {
                     <div className="px-2 py-3 bg-primary/5 rounded-xl border border-primary/20 mx-1 my-2 relative overflow-hidden group">
                         <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
                         <div className="flex items-center gap-3 px-2">
-                            <span className="text-xl opacity-80">{getSourceIcon(modeStatus.active_source.type)}</span>
+                            <span className="opacity-80 flex items-center">{getSourceIcon(modeStatus.active_source.type)}</span>
                             <div className="flex-1 min-w-0">
                                 <div className="text-[10px] font-black uppercase tracking-tighter text-primary mb-0.5">Active Neural Link</div>
                                 <div className="font-bold text-white truncate">{modeStatus.active_source.name}</div>
@@ -216,7 +220,7 @@ export function DataSourceSelector({ onUploadClick, onConnectClick }: {
                                     onClick={() => activateSource(source.source_id)}
                                     className="flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer hover:bg-white/5 focus:bg-white/5 transition-colors mb-1 group"
                                 >
-                                    <span className="text-lg grayscale group-hover:grayscale-0 transition-all">{getSourceIcon(source.type)}</span>
+                                    <span className="grayscale group-hover:grayscale-0 transition-all flex items-center">{getSourceIcon(source.type)}</span>
                                     <div className="flex-1 min-w-0">
                                         <div className="font-bold text-white/80 group-hover:text-white transition-colors truncate">{source.name}</div>
                                         <div className="text-[10px] text-muted-foreground/40 font-medium group-hover:text-muted-foreground/60 transition-colors">
@@ -233,7 +237,7 @@ export function DataSourceSelector({ onUploadClick, onConnectClick }: {
                         </>
                     ) : !modeStatus?.active_source && (
                         <div className="px-4 py-8 text-center space-y-3">
-                            <div className="text-3xl opacity-20">🌫️</div>
+                            <div className="flex justify-center opacity-20"><Database className="h-8 w-8 text-muted-foreground" /></div>
                             <p className="text-xs text-muted-foreground/40 font-medium">No intelligence vectors established.</p>
                         </div>
                     )}

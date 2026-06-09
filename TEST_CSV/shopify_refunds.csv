@@ -1,0 +1,11 @@
+refund_id,order_id,product_id,sku,refund_amount,reason,referral_source,created_at
+9001,1005,101,WEP-001,89.99,not_as_described,instagram,2026-06-09 18:58:02
+9002,1053,101,WEP-001,89.99,not_as_described,instagram,2026-06-04 18:58:02
+9003,1069,101,WEP-001,89.99,not_as_described,instagram,2026-06-07 18:58:02
+9004,1033,101,WEP-001,89.99,not_as_described,instagram,2026-06-05 18:58:02
+9005,1055,101,WEP-001,89.99,not_as_described,instagram,2026-06-07 18:58:02
+9006,1005,102,UCH-002,49.99,defective,google,2026-06-05 18:58:02
+9007,1006,102,UCH-002,49.99,defective,google,2026-06-07 18:58:02
+9008,1056,102,UCH-002,49.99,defective,google,2026-06-04 18:58:02
+9009,1027,102,UCH-002,49.99,defective,google,2026-06-06 18:58:02
+9010,1065,103,MKB-003,129.99,customer_changed_mind,direct,2026-06-06 18:58:02

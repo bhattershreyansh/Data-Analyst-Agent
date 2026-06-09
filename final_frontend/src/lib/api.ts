@@ -92,6 +92,8 @@ export interface QueryResponse {
   execution_time_ms?: number;
   error?: string;
   timestamp: string;
+  thought_logs?: any[];
+  diagnose_data?: DiagnoseResponse | null;
 }
 
 export interface SavedChart {
@@ -231,6 +233,10 @@ export const dataSourcesAPI = {
 
   getSmartQuestions: async (id: string, token?: string | null, refresh: boolean = false) => {
     return await api.get(`/data-sources/${id}/smart-questions?refresh=${refresh}`, token);
+  },
+
+  scanAnomalies: async (id: string, token?: string | null) => {
+    return await api.get(`/data-sources/${id}/scan-anomalies`, token);
   },
 
   deactivateSource: async (token?: string | null) => {

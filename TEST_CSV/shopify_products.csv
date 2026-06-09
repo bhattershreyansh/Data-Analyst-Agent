@@ -1,0 +1,11 @@
+product_id,title,sku,price,inventory_quantity,vendor,created_at,updated_at
+101,Wireless Earbuds Pro,WEP-001,89.99,5,TechSound,2025-12-11 18:58:02,2026-06-08 18:58:02
+102,USB-C Hub 7-Port,UCH-002,49.99,3,GadgetCo,2025-12-11 18:58:02,2026-06-08 18:58:02
+103,Mechanical Keyboard,MKB-003,129.99,200,KeyMaster,2025-12-11 18:58:02,2026-06-08 18:58:02
+104,Laptop Stand Aluminum,LSA-004,39.99,8,DeskPro,2025-12-11 18:58:02,2026-06-08 18:58:02
+105,Webcam 4K Ultra,WCU-005,79.99,150,VisionTech,2025-12-11 18:58:02,2026-06-08 18:58:02
+106,Phone Stand Magnetic,PSM-006,19.99,6,MagGear,2025-12-11 18:58:02,2026-06-08 18:58:02
+107,Desk Lamp LED,DLL-007,34.99,500,LightCo,2025-12-11 18:58:02,2026-06-08 18:58:02
+108,Cable Organizer Kit,COK-008,14.99,9,NeatDesk,2025-12-11 18:58:02,2026-06-08 18:58:02
+109,Portable SSD 1TB,SSD-009,99.99,300,StoragePro,2025-12-11 18:58:02,2026-06-08 18:58:02
+110,Smart Notebook,SNB-010,24.99,0,PaperTech,2025-12-11 18:58:02,2026-06-08 18:58:02

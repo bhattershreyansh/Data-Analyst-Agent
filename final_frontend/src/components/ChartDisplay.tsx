@@ -4,17 +4,9 @@ import Plot from 'react-plotly.js';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, Database, FileCode, Heart, Sparkles, PlusCircle, Activity, ShieldAlert, CheckCircle2, Loader2, Zap, Info, Search, Bot } from 'lucide-react';
-import { QueryResponse, SavedChart, queryAPI, DiagnoseResponse } from '@/lib/api';
+import { Clock, Database, FileCode, Heart, Sparkles, PlusCircle, Activity, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { QueryResponse, SavedChart } from '@/lib/api';
 import { v4 as uuidv4 } from 'uuid';
-import { useAuth } from '@clerk/react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 
 interface ChartDisplayProps {
   result: QueryResponse;
@@ -151,12 +143,8 @@ function convertChartConfigToPlotlyData(chartConfig: any, data: any[]): any[] {
 export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: ChartDisplayProps) {
   const [isSaved, setIsSaved] = useState(!!result.chart_id);
   const [currentChartId, setCurrentChartId] = useState<string | undefined>(result.chart_id);
-  const [isDiagnosing, setIsDiagnosing] = useState(false);
-  const [diagnosis, setDiagnosis] = useState<DiagnoseResponse | null>(null);
-  const [nexusInfoOpen, setNexusInfoOpen] = useState(false);
-  const { getToken } = useAuth();
 
-  // Sync saved state when result changes (e.g. from history or after saving)
+  // Sync saved state when result changes (e.g. after saving)
   useEffect(() => {
     if (result.chart_id) {
       setIsSaved(true);
@@ -166,14 +154,12 @@ export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: Ch
 
   const handleToggleSave = () => {
     if (isSaved) {
-      // Unsave
       if (currentChartId && onDelete) {
         onDelete(currentChartId);
       }
       setIsSaved(false);
       setCurrentChartId(undefined);
     } else {
-      // Save
       if (onSave && result.chart && result.result) {
         const newChartId = uuidv4();
         const chartToSave: SavedChart = {
@@ -187,7 +173,6 @@ export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: Ch
           y_axis: result.chart.y,
           timestamp: new Date().toISOString()
         };
-
         onSave(chartToSave);
         setIsSaved(true);
         setCurrentChartId(newChartId);
@@ -195,27 +180,8 @@ export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: Ch
     }
   };
 
-  const handleDiagnose = async () => {
-    setIsDiagnosing(true);
-    setDiagnosis(null);
-    try {
-      const token = await getToken();
-      const response = await queryAPI.diagnoseAnomaly({
-        question: result.reasoning || "Analyze this anomaly",
-        anomaly_data: result.result || []
-      }, token);
-      
-      if (response.success) {
-        setDiagnosis(response.data);
-      }
-    } catch (error) {
-      console.error("Forensic analysis failed:", error);
-    } finally {
-      setIsDiagnosing(false);
-    }
-  };
-
   console.log('ChartDisplay received result:', result);
+
 
   if (!result.success) {
     return (
@@ -302,7 +268,7 @@ export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: Ch
         )}
       </div>
 
-      {/* Lumina Intelligence Engine: Insights & Narratives (PROMINENT POSITION) */}
+      {/* AI Insights: Insights & Narratives (PROMINENT POSITION) */}
       {result.insights && (
         <div className="rounded-3xl glass border-white/5 p-8 relative overflow-hidden group shadow-2xl bg-primary/5 border-primary/10">
           <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-primary to-accent" />
@@ -310,7 +276,7 @@ export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: Ch
             <div className="p-2 rounded-xl bg-primary/20 text-primary ring-4 ring-primary/5">
               <Sparkles className="h-5 w-5 animate-pulse" />
             </div>
-            <h3 className="text-xl font-black text-white tracking-tight">Lumina Insights</h3>
+            <h3 className="text-xl font-black text-white tracking-tight">AI Insights</h3>
           </div>
           
           <div className="space-y-4">
@@ -420,126 +386,9 @@ export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: Ch
           </Button>
         )}
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleDiagnose}
-          disabled={isDiagnosing}
-          className="gap-2 rounded-2xl glass border-primary/20 text-primary hover:bg-primary/5 group relative overflow-hidden"
-        >
-          {isDiagnosing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Zap className="h-4 w-4 text-primary animate-pulse" />
-          )}
-          <span className="relative z-10">Causal Nexus Discovery</span>
-          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-        </Button>
       </div>
 
-      {/* Causal Nexus Section */}
-      <AnimatePresence>
-        {(isDiagnosing || diagnosis) && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="glass-card rounded-[2rem] p-8 border-primary/20 shadow-[0_0_40px_rgba(139,92,246,0.1)] relative overflow-hidden my-6">
-              <div className="absolute top-0 right-0 p-8 opacity-5">
-                <Activity className="h-32 w-32 text-primary" />
-              </div>
 
-              <div className="flex items-center gap-4 mb-8">
-                <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary shadow-lg shadow-primary/20">
-                  <Activity className="h-6 w-6" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-2xl font-black text-white tracking-tight uppercase italic">Causal Nexus</h3>
-                    <button 
-                      type="button"
-                      onClick={() => setNexusInfoOpen(true)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg glass border-white/5 text-muted-foreground hover:text-primary hover:border-primary/40 transition-all hover:bg-primary/5 group"
-                      title="What is Causal Nexus?"
-                    >
-                      <Info className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  <p className="text-[10px] font-bold text-primary tracking-[0.3em] uppercase opacity-60 mt-1">Forensic Root Cause Analysis</p>
-                </div>
-              </div>
-
-              {isDiagnosing ? (
-                <div className="space-y-6 py-10">
-                  <div className="flex flex-col items-center justify-center text-center space-y-4">
-                    <Loader2 className="h-12 w-12 text-primary animate-spin" />
-                    <p className="text-white/60 font-medium italic animate-pulse">Orchestrating multi-agent forensic discovery...</p>
-                    <div className="flex gap-2 mt-4">
-                      <div className="h-1 w-8 rounded-full bg-primary/40 animate-pulse" />
-                      <div className="h-1 w-8 rounded-full bg-primary/20 animate-pulse delay-75" />
-                      <div className="h-1 w-8 rounded-full bg-primary/10 animate-pulse delay-150" />
-                    </div>
-                  </div>
-                </div>
-              ) : diagnosis && (
-                <div className="grid lg:grid-cols-5 gap-10">
-                  <div className="lg:col-span-3 space-y-6">
-                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-4">
-                      <h4 className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                        <Sparkles className="h-3 w-3" />
-                        Forensic Verdict
-                      </h4>
-                      <p className="text-white/80 leading-relaxed text-lg font-medium italic">
-                        "{diagnosis.verdict}"
-                      </p>
-                    </div>
-
-                    <div className="grid sm:grid-cols-3 gap-4">
-                      {diagnosis.diagnostic_path.map((step, idx) => (
-                        <div key={idx} className="p-4 rounded-2xl bg-black/20 border border-white/5 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Step {idx + 1}</span>
-                            {step.status === 'critical' ? (
-                              <ShieldAlert className="h-4 w-4 text-destructive" />
-                            ) : step.status === 'success' ? (
-                              <CheckCircle2 className="h-4 w-4 text-green-400" />
-                            ) : (
-                              <Activity className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                          <h5 className="font-bold text-white text-sm">{step.title}</h5>
-                          <p className="text-xs text-white/40 line-clamp-2 leading-tight">{step.finding}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="lg:col-span-2 space-y-6">
-                    <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 h-full">
-                      <h4 className="text-xs font-black text-white/60 uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <Activity className="h-3 w-3" />
-                        Investigation Log
-                      </h4>
-                      <div className="space-y-4">
-                        {diagnosis.investigation_steps.map((step, idx) => (
-                          <div key={idx} className="flex gap-4 items-start group">
-                            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-primary ring-4 ring-primary/10 shrink-0" />
-                            <p className="text-xs text-white/50 group-hover:text-white/80 transition-colors leading-relaxed">
-                              {step}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Table View - Always show the data */}
       {result.result && result.result.length > 0 && (
@@ -581,62 +430,6 @@ export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: Ch
         </div>
       )}
     </motion.div>
-
-    {/* Causal Nexus Info Dialog */}
-    <Dialog open={nexusInfoOpen} onOpenChange={setNexusInfoOpen}>
-      <DialogContent className="max-w-md bg-black/80 backdrop-blur-2xl border-white/10 rounded-[2rem] p-8 shadow-[0_0_50px_rgba(139,92,246,0.15)]">
-        <DialogHeader className="space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-primary/20 text-primary flex items-center justify-center mb-2 mx-auto ring-4 ring-primary/5">
-            <Activity className="h-8 w-8 animate-pulse" />
-          </div>
-          <DialogTitle className="text-3xl font-black text-center text-white tracking-tight italic uppercase">
-            Causal Nexus
-          </DialogTitle>
-          <DialogDescription className="text-center text-white/60 text-base leading-relaxed">
-            An autonomous multi-agent diagnostic engine that investigates anomalies to discover their root causes.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="mt-8 space-y-6">
-          <div className="space-y-4">
-            {[
-              { 
-                title: "Iterative Deep Dives", 
-                desc: "Unlike standard queries, Nexus autonomously runs up to 5 follow-up queries to test hypotheses.",
-                icon: <Search className="h-4 w-4" />
-              },
-              { 
-                title: "Root Cause Discovery", 
-                desc: "Moves beyond describing what happened to uncover exactly why it happened.",
-                icon: <Zap className="h-4 w-4" />
-              },
-              { 
-                title: "Automated 'Judge' Agent", 
-                desc: "An internal evaluator checks evidence sufficiency and dictates where to dig next.",
-                icon: <Bot className="h-4 w-4" />
-              }
-            ].map((item, i) => (
-              <div key={i} className="flex gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all group">
-                <div className="mt-1 p-2 rounded-lg bg-primary/10 text-primary group-hover:scale-110 transition-transform flex-shrink-0">
-                  {item.icon}
-                </div>
-                <div>
-                  <h4 className="font-bold text-white text-sm">{item.title}</h4>
-                  <p className="text-xs text-white/40 leading-relaxed mt-0.5">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <Button 
-            onClick={() => setNexusInfoOpen(false)}
-            className="w-full py-6 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold shadow-xl shadow-primary/20"
-          >
-            Acknowledge
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-    </>
+  </>
   );
 }

@@ -110,7 +110,7 @@ export default function Dashboards() {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-32 glass-card rounded-[3rem] border-white/5 space-y-8 max-w-3xl mx-auto"
           >
-            <div className="text-8xl mb-6 opacity-30">📊</div>
+            <div className="flex justify-center opacity-30 mb-6"><LayoutDashboard className="h-24 w-24 text-muted-foreground" /></div>
             <div className="space-y-2">
               <h2 className="text-3xl font-black text-white">Tabula Rasa</h2>
               <p className="text-muted-foreground/80 max-w-md mx-auto text-lg leading-relaxed">

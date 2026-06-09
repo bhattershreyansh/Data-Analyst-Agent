@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { useAuth } from "@clerk/react";
 import { useNavigate } from "react-router-dom";
 import { dataSourcesAPI } from "@/lib/api";
-import { Sparkles } from 'lucide-react';
+import { Sparkles, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { DataSourceSelector } from '@/components/DataSourceSelector';
@@ -37,14 +37,14 @@ export function Header({ actions }: HeaderProps) {
       <header className="glass neon-border sticky top-0 z-50 transition-all duration-300">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-4 group transition-all">
-            <div className="h-14 w-14 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-              <img src="/Futuristic Lumina AI logo design.png" alt="Lumina AI" className="h-full w-full object-contain drop-shadow-[0_0_15px_rgba(139,92,246,0.5)]" />
+            <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary border border-primary/30 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+              <ShoppingBag className="h-6 w-6" />
             </div>
             <div className="flex flex-col">
               <h1 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 tracking-tighter">
-                Lumina AI
+                Shopify Analyst
               </h1>
-              <p className="text-[10px] text-primary font-bold uppercase tracking-[0.2em]">Private Intelligence</p>
+              <p className="text-[10px] text-primary font-bold uppercase tracking-[0.2em]">AI Data Assistant</p>
             </div>
           </Link>
 

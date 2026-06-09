@@ -275,7 +275,7 @@ export default function DashboardView() {
 
         {!dashboard.charts || dashboard.charts.length === 0 ? (
           <div className="text-center py-32 glass-card rounded-[3rem] border-white/5">
-            <div className="text-8xl mb-6 opacity-20">🕳️</div>
+            <div className="flex justify-center opacity-20 mb-6"><Database className="h-24 w-24 text-muted-foreground" /></div>
             <h2 className="text-3xl font-black text-white mb-2">Void Detected</h2>
             <p className="text-muted-foreground/60 max-w-sm mx-auto">
               This node has not yet been populated with any intelligence modules.

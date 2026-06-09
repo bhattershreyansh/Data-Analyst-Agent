@@ -23,15 +23,15 @@ export default function Home() {
         >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-white/10 text-primary text-sm font-semibold mb-2 neon-glow">
             <Sparkles className="h-4 w-4" />
-            The Future of Private Data Intelligence
+            The Future of E-Commerce Data Analytics
           </div>
           
           <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-none text-white">
-            Enterprise Data. <span className="text-neon">Solved.</span>
+            Shopify Data. <span className="text-neon">Solved.</span>
           </h1>
           
           <p className="text-xl md:text-2xl text-muted-foreground/80 max-w-3xl mx-auto leading-relaxed">
-            The world's first autonomous forensic engine for your data. Connect any SQL database or Excel file and get root-cause insights in seconds—not days.
+            The world's first autonomous analyst for your e-commerce data. Connect your Shopify database or CSV files and get root-cause insights in seconds.
           </p>
 
           <div className="pt-4">
@@ -64,29 +64,29 @@ export default function Home() {
           {[
             { 
               icon: <Activity className="h-6 w-6" />, 
-              title: "Causal Nexus", 
-              desc: "Autonomous forensic engine that investigates data anomalies to find the root cause.",
+              title: "Root Cause Analysis", 
+              desc: "Autonomous diagnostic engine that scans data anomalies to find the root cause.",
               color: "text-blue-400",
               bgColor: "bg-blue-400/10"
             },
             { 
               icon: <Sparkles className="h-6 w-6" />, 
-              title: "Lumina Intelligence", 
-              desc: "Rich business narratives and trend detection for every single insight.",
+              title: "AI Insights", 
+              desc: "Rich e-commerce narratives and trend detection for every single query.",
               color: "text-primary",
               bgColor: "bg-primary/10"
             },
             { 
               icon: <Layout className="h-6 w-6" />, 
-              title: "Sentinel Blueprint", 
+              title: "Database Structure Map", 
               desc: "Interactive card-grid map of your entire data ecosystem and semantic links.",
               color: "text-emerald-400",
               bgColor: "bg-emerald-400/10"
             },
             { 
               icon: <Globe className="h-6 w-6" />, 
-              title: "Universal Data", 
-              desc: "Native support for PostgreSQL, MySQL, SQL Server, Excel, and CSV.",
+              title: "Shopify & CSV Data", 
+              desc: "Native support for Shopify PostgreSQL databases, custom databases, and CSV files.",
               color: "text-accent",
               bgColor: "bg-accent/10"
             }
@@ -111,8 +111,8 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-20 items-center">
             <div className="text-left space-y-8">
               <h2 className="text-4xl font-bold text-white leading-tight">
-                Beyond traditional analytics. <br />
-                <span className="text-primary italic">Deep structural awareness.</span>
+                Beyond traditional dashboards. <br />
+                <span className="text-primary italic">Deep structural e-commerce awareness.</span>
               </h2>
               <div className="space-y-6">
                 <div className="flex gap-4">
@@ -121,7 +121,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="font-bold text-white">Semantic Relationship Discovery</h4>
-                    <p className="text-sm text-muted-foreground">Lumina identifies "statistical links" in messy data even when foreign keys are missing.</p>
+                    <p className="text-sm text-muted-foreground">Our AI identifies "statistical links" in messy data even when foreign keys are missing.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">

@@ -1,148 +1,174 @@
 <div align="center">
-  <img src="final_frontend/public/Futuristic%20Lumina%20AI%20logo%20design.png" width="180" alt="Lumina AI Logo" />
-  <h1>Lumina AI · Private Data Intelligence</h1>
-  <p><b>The ultimate autonomous forensic and analytics engine for enterprise data ecosystems.</b></p>
+  <img src="final_frontend/public/Futuristic%20Lumina%20AI%20logo%20design.png" width="180" alt="Data Analyst Agent Logo" />
+  <h1>Data Analyst Agent · Private Intelligence Platform</h1>
+  <p><b>A dual-mode analytics engine — natural language querying meets autonomous forensic root cause analysis.</b></p>
 </div>
 
 ---
 
-## 🌟 The Vision
+## The Vision
 
-Lumina AI is not just a dashboard—it is a **reasoning layer** for your business data. It transforms raw numbers into **Strategic Content** by combining high-precision Natural Language processing with an autonomous multi-agent forensic engine. Whether you are a CEO looking for a high-level trend or an analyst performing a root-cause deep dive, Lumina AI provides the answers in plain English.
+Data Analyst Agent is a **reasoning layer** for your business data. It connects directly to your databases or uploaded files and gives you two distinct investigation modes:
 
----
+- **Query & Charts** — ask any business question in plain English and get charts, SQL, and tabular results instantly.
+- **Deep Diagnostics** — submit an anomaly or business problem and a multi-agent LangGraph engine autonomously investigates root causes, cross-referencing multiple tables until it reaches a verdict.
 
-## 🚀 Key Features
-
-### 🧠 Causal Nexus Discovery (Forensic Engine)
-Lumina features **Causal Nexus**, a multi-agent diagnostic system built on **LangGraph** that investigates data anomalies autonomously:
-- **Autonomous Iteration**: The engine runs up to 5 iterative "Sleuth" steps to verify hypotheses.
-- **Judge Node**: An internal evaluator that checks if evidence is sufficient or if the engine needs to drill deeper into related tables.
-- **Root Cause Recovery**: Moves beyond "what happened" to reveal "why it happened" with quantified certainty.
-
-### 💡 Lumina Intelligence (Narrative Engine)
-Powered by specialized LLM prompts, Lumina Intelligence enriches every query result:
-- **Strategic Context**: Explains the business implications behind the data spikes or dips.
-- **Trend Detection**: Automatically identifies distribution skews and outliers in the result set.
-- **Executive Summaries**: Generates high-level summaries tailored for quick decision-making.
-
-### 🗺️ Sentinel Map (Schema Blueprint)
-A revolutionary **custom card-grid visualization** of your entire data schema:
-- **Semantic Linker**: Automatically discovers "Statistical Foreign Keys" in messy Excel or CSV files without formal constraints.
-- **Global & Focus Modes**: Toggle between a high-level architectural view and a deep-dive column inspection for specific tables.
-- **Interactive Navigation**: Click any table to see its direct relationships and navigate the web of data.
-
-### 📊 Universal Querying & Visualization
-- **Multi-Source Support**: Connect **PostgreSQL, MySQL, SQL Server**, or upload **CSV/Excel** files.
-- **NL → SQL**: Highly accurate SQL generation using RAG (Retrieval Augmented Generation) and ChromaDB embeddings.
-- **Smart Visuals**: Automatically selects the best chart type (Bar, Line, Pie, Area, Table) and allows manual overrides.
-- **Dynamic Dashboards**: Save any insight to a persistent dashboard for real-time monitoring.
+Each mode maintains its own independent conversation history, so exploration and investigation never get mixed up.
 
 ---
 
-## 🛡️ Security & Enterprise Hardening
+## Key Features
 
-### 🔒 Strict RBAC & Multi-tenancy
-Lumina AI implements a **Safety-First isolation architecture**:
-- **User Isolation**: All state (active sources, chat history, saved charts, blueprints) is strictly keyed by `userId` (via Clerk). User B can never access User A's data, even if they share the same backend.
-- **Session Protection**: All sensitive `localStorage` and `React Query` caches are wiped immediately upon sign-out or session switch.
+### Query & Charts
+- **Natural Language → SQL**: High-accuracy SQL generation using RAG (ChromaDB schema embeddings) and Groq LLaMA 3.3 70B.
+- **Auto Visualisation**: Automatically selects the best chart type (Bar, Line, Pie, Area) via Plotly.js.
+- **Save to Dashboard**: Pin any chart result to your persistent dashboard with one click.
+- **Data Explorer**: Every query response includes a full interactive data table alongside the chart.
 
-### 🚫 SQL Safety Gate
-Every query is intercepted by a security middleware that blocks **mutating commands**:
-- **Blacklist**: `DROP`, `DELETE`, `UPDATE`, `INSERT`, `TRUNCATE`, `ALTER`, etc.
-- **Read-Only Enforcement**: Ensures the LLM only performs `SELECT` operations, protecting the integrity of your production data.
+### Deep Diagnostics (Forensic Engine)
+Built on **LangGraph**, the diagnostics engine runs a multi-agent pipeline:
+- **Scout Agent**: Scans the data for statistical anomalies and patterns.
+- **Sleuth Agent**: Iteratively queries related tables to verify or eliminate hypotheses (up to 5 rounds).
+- **Judge Agent**: Evaluates accumulated evidence and decides whether the investigation is conclusive.
+- **Forensic Verdict**: A plain-English root cause summary with quantified evidence — *what happened*, *why it happened*, and the *financial impact*.
+
+### Schema Blueprint
+A visual card-grid of your entire data schema:
+- **Semantic Linker**: Discovers relationships in messy Excel/CSV files without formal foreign key constraints.
+- **Global & Focus Modes**: High-level architecture view or deep-dive column inspection.
+- **Interactive Navigation**: Click any table to explore its relationships.
+
+### Proactive Anomaly Alerts
+The **Anomaly Alert Center** runs continuous background scans on your active data source and surfaces anomalies with suggested diagnostic queries.
+
+### Smart Question Suggestions
+Schema-aware question suggestions tailored to your active data source, so you always have a starting point.
+
+### Security & Multi-Tenancy
+- **Strict RBAC**: All state (sources, history, charts, blueprints) is keyed by `userId` via Clerk. Users never share data.
+- **SQL Safety Gate**: A middleware layer blocks all mutating SQL commands (`DROP`, `DELETE`, `UPDATE`, `INSERT`, `ALTER`, etc.). Only `SELECT` is permitted.
+- **Session Isolation**: All caches and localStorage entries are wiped on sign-out or user switch.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-### Backend (The Brain)
-- **Framework**: FastAPI (Python 3.11+)
-- **LLM Orchestration**: LangGraph, LangChain
-- **Database Layer**: SQLAlchemy (Core), Pandas (Analysis)
-- **Vector DB (RAG)**: ChromaDB (Storing schema embeddings)
-- **LLM**: Groq (Llama 3.3 70B Versatile)
+### Backend
+| Layer | Technology |
+| :--- | :--- |
+| Framework | FastAPI (Python 3.11+) |
+| LLM Orchestration | LangGraph, LangChain |
+| LLM | Groq (LLaMA 3.3 70B Versatile) |
+| Database Layer | SQLAlchemy Core, Pandas |
+| Vector DB (RAG) | ChromaDB |
+| Auth | Clerk (JWT validation) |
 
-### Frontend (The Interface)
-- **Framework**: React 18 (Vite, TypeScript)
-- **Styling**: Tailwind CSS + shadcn/ui
-- **State/Data**: React Query (TanStack), Framer Motion
-- **Charts**: Recharts, Plotly.js
+### Frontend
+| Layer | Technology |
+| :--- | :--- |
+| Framework | React 18 + Vite + TypeScript |
+| Styling | Tailwind CSS + shadcn/ui |
+| Animations | Framer Motion |
+| Charts | Plotly.js |
+| State / Data | TanStack React Query |
+| Auth | Clerk React |
 
 ---
 
-## 📂 Project Organization
+## Project Structure
 
 ```text
 Data-Analyst-Agent/
-├── agent/                      # BACKEND (Python)
-│   ├── server.py               # FastAPI Endpoints & Logic
-│   ├── forensic_graph.py       # Causal Nexus (LangGraph)
-│   ├── agnet_rag.py            # Schema Sentinel & RAG System
-│   ├── insight_engine.py       # Lumina Intelligence Logic
-│   ├── data_sources.py         # Multi-DB Connection Manager
-│   ├── smart_questions.py      # Schema-based Suggestion Logic
-│   ├── models.py               # Database Models (Auth/Persistence)
-│   ├── caching.py              # Performance Optimization Layer
-│   └── data/                   # Isolated SQLite Storage for Uploads
-├── final_frontend/             # FRONTEND (React)
+├── agent/                          # BACKEND (Python / FastAPI)
+│   ├── app/
+│   │   ├── main.py                 # FastAPI app, routing & middleware
+│   │   ├── models.py               # SQLAlchemy database models
+│   │   └── services/
+│   │       ├── diagnostics.py      # Deep Diagnostics (LangGraph multi-agent)
+│   │       ├── rag_engine.py       # NL → SQL (ChromaDB RAG)
+│   │       ├── anomaly_scanner.py  # Proactive anomaly detection
+│   │       ├── insights.py         # Schema-aware smart questions
+│   │       └── data_sources.py     # Multi-DB connection manager
+│   └── data/                       # Isolated SQLite storage for uploads
+├── final_frontend/                 # FRONTEND (React + Vite)
 │   ├── src/
-│   │   ├── pages/              # Analytics, Blueprint, Home, Dashboards
-│   │   ├── components/         # ChatInterface, ChartDisplay, Header
-│   │   ├── contexts/           # RBAC & Theme State
-│   │   └── lib/api.ts          # Type-safe API Client
-│   └── public/                 # Futuristic Assets & Branding
-└── README.md                   # Complete Documentation
+│   │   ├── pages/
+│   │   │   ├── Analytics.tsx       # Main dual-mode chat page
+│   │   │   ├── Blueprint.tsx       # Schema Blueprint visualiser
+│   │   │   ├── Dashboards.tsx      # Saved charts & dashboards
+│   │   │   └── Home.tsx            # Landing & data source setup
+│   │   ├── components/
+│   │   │   ├── ChatInterface.tsx   # Dual-mode chat UI (Query / Diagnostics)
+│   │   │   ├── ChartDisplay.tsx    # Chart + table result renderer
+│   │   │   ├── AnomalyAlertCenter.tsx
+│   │   │   ├── SmartQuestions.tsx
+│   │   │   ├── SavedChartsSidebar.tsx
+│   │   │   └── Header.tsx
+│   │   ├── contexts/               # Theme & RBAC state
+│   │   └── lib/api.ts              # Type-safe API client
+│   └── public/
+└── README.md
 ```
 
 ---
 
-## ⚙️ Installation & Setup
+## Installation & Setup
 
-### 1. Prerequisites
-- **Python 3.11+**
-- **Node.js 18+**
-- **Groq API Key**: Obtain from [Groq Console](https://console.groq.com/)
-- **Clerk Keys**: For Production Auth (Default is mock for local dev)
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- [Groq API Key](https://console.groq.com/)
+- [Clerk Keys](https://clerk.com/) (for authentication)
 
-### 2. Backend Setup
+### 1. Backend Setup
 ```bash
 cd agent
 pip install -r ../requirements.txt
-# Create a .env file with your GROQ_API_KEY
-uvicorn server:app --reload --port 8000
+
+# Create a .env file:
+# GROQ_API_KEY=your_key_here
+# DATABASE_URL=sqlite:///./data/app.db
+# CLERK_SECRET_KEY=your_clerk_secret
+
+uvicorn app.main:app --reload --port 8000
 ```
 
-### 3. Frontend Setup
+### 2. Frontend Setup
 ```bash
 cd final_frontend
 npm install
+
+# Create a .env file:
+# VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+# VITE_API_URL=http://localhost:8000
+
 npm run dev
 ```
 
 ---
 
-## 📖 Usage Guide
+## Usage Guide
 
-1.  **Select Data Source**: Use the **Header** to upload an Excel file or connect your SQL Database.
-2.  **Ask Questions**: In the Chat interface, ask anything (*"What is the total revenue by region in Q3?"*).
-3.  **Explore Intelligence**: Toggle **Lumina Intelligence** to get business trends and narratives.
-4.  **Forensic Investigation**: If a result looks odd, click **Run Causal Nexus** for a multi-agent root cause analysis.
-5.  **Blueprint Exploration**: Visit the **Schema Blueprint** page to see how your data tables are semantically and physically linked.
-6.  **Build Dashboards**: Save icons from individual charts and visit the **Dashboards** page to organize them.
+1. **Connect a Data Source** — Upload a CSV/Excel file or connect a PostgreSQL / MySQL / SQL Server database from the Home page.
+2. **Query & Charts mode** — Switch to the **Query & Charts** tab in the chat and ask any business question in plain English. Results appear as charts with a data table below.
+3. **Save Charts** — Click **Save Chart** on any result to pin it to your dashboard.
+4. **Deep Diagnostics mode** — Switch to the **Deep Diagnostics** tab and describe an anomaly or business problem (e.g. *"Why did revenue drop 52% last week?"*). The multi-agent engine investigates and returns a forensic verdict with step-by-step reasoning.
+5. **Schema Blueprint** — Visit the Blueprint page to explore how your data tables are semantically linked and navigate the schema visually.
+6. **Dashboards** — Visit the Dashboards page to view all saved charts in one place.
+
+> **Note**: Query & Charts and Deep Diagnostics maintain completely separate conversation histories. Switching modes swaps the thread — your exploration history and investigation history never mix.
 
 ---
 
-## 📜 API Reference
+## API Reference
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
-| `/query` | POST | NL → Chart + SQL + Intelligence |
-| `/diagnose` | POST | Trigger Causal Nexus Forensic Analysis |
-| `/schema` | GET | Fetch the Sentinel Map (Blueprint) |
-| `/data-sources` | GET/POST | Manage database and file connections |
-| `/saved-charts` | GET/POST | Manage persistent chart storage |
-| `/dashboards` | GET/POST | Create and manage unified views |
-
----
-
+| `/query` | POST | NL → SQL → Chart + Data Table |
+| `/diagnose` | POST | Trigger Deep Diagnostics forensic analysis |
+| `/schema` | GET | Fetch schema blueprint for active source |
+| `/data-sources` | GET / POST | Manage database and file connections |
+| `/saved-charts` | GET / POST / DELETE | Manage persistent chart storage |
+| `/dashboards` | GET / POST | Create and manage unified dashboard views |
+| `/anomalies` | GET | Fetch latest anomaly scan results |
+| `/smart-questions` | GET | Get schema-aware question suggestions |

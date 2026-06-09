@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth, useUser } from '@clerk/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatInterface, Message } from '@/components/ChatInterface';
+import { AnomalyAlertCenter } from '@/components/AnomalyAlertCenter';
 import { ChartDisplay } from '@/components/ChartDisplay';
 import { SavedChartsSidebar } from '@/components/SavedChartsSidebar';
 import { CreateDashboardDialog } from '@/components/CreateDashboardDialog';
@@ -19,8 +20,14 @@ export default function Analytics() {
   const { getToken } = useAuth();
   const { user } = useUser();
   const userId = user?.id;
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [queryMessages, setQueryMessages] = useState<Message[]>([]);
+  const [diagnosticsMessages, setDiagnosticsMessages] = useState<Message[]>([]);
+  const [chatMode, setChatMode] = useState<'query' | 'diagnose'>('query');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Derived: active messages for the current mode
+  const messages = chatMode === 'query' ? queryMessages : diagnosticsMessages;
+  const setMessages = chatMode === 'query' ? setQueryMessages : setDiagnosticsMessages;
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedCharts, setSelectedCharts] = useState<string[]>([]);
@@ -33,14 +40,10 @@ export default function Analytics() {
   const [popupQuestion, setPopupQuestion] = useState("");
   const [popupResult, setPopupResult] = useState<QueryResponse | null>(null);
 
-  // Insight Engine toggle
-  const [insightsEnabled, setInsightsEnabled] = useState(false);
-
   // ── RBAC: clear all in-memory state when the signed-in user changes ──
-  // Without this, a second user logging in on the same browser tab inherits
-  // the previous user's entire chat history and active source.
   useEffect(() => {
-    setMessages([]);
+    setQueryMessages([]);
+    setDiagnosticsMessages([]);
     setActiveSourceId(null);
     setActiveSourceName("");
   }, [userId]);
@@ -72,7 +75,7 @@ export default function Analytics() {
     }
   }, [userId]);
 
-  const handleSendMessage = async (text: string) => {
+  const handleSendMessage = async (text: string, mode: 'query' | 'diagnose' = 'query') => {
     // Add user message
     const userMsg: Message = {
       id: uuidv4(),
@@ -86,37 +89,85 @@ export default function Analytics() {
 
     try {
       const token = await getToken();
-      const response = await queryAPI.sendQuery({ question: text, limit: 10, generate_insights: insightsEnabled }, token);
+      
+      if (mode === 'diagnose') {
+        const response = await queryAPI.diagnoseAnomaly({
+          question: text,
+          anomaly_data: [],
+          source_id: activeSourceId || undefined
+        }, token);
 
-      if (response.data.success) {
-        const assistantMsg: Message = {
-          id: uuidv4(),
-          role: 'assistant',
-          content: response.data.reasoning || "Here's the analysis for your request:",
-          result: response.data,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, assistantMsg]);
+        if (response.success && response.data) {
+          const assistantMsg: Message = {
+            id: uuidv4(),
+            role: 'assistant',
+            content: response.data.verdict || "No conclusive verdict reached.",
+            result: {
+              success: true,
+              diagnose_data: response.data,
+              thought_logs: (response.data.investigation_steps || []).map((step: string) => {
+                // Parse the step output to display clean agent logs
+                const match = step.match(/^(?:⚖️\s*)?Judge\s+\[(.*?)\]:\s+(.*)$/);
+                const agentName = match ? 'Judge' : step.startsWith('[Call') ? 'Sleuth' : 'Scout';
+                const cleanMsg = step.replace(/^(?:🕵️|🔬|⚖️)\s*/, "");
+                return {
+                  agent: agentName,
+                  message: cleanMsg
+                };
+              })
+            },
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, assistantMsg]);
+        } else {
+          const errorMsg: Message = {
+            id: uuidv4(),
+            role: 'assistant',
+            content: `I encountered an issue during analysis: ${response.error || "Unknown error"}`,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, errorMsg]);
+        }
       } else {
-        const errorMsg: Message = {
-          id: uuidv4(),
-          role: 'assistant',
-          content: `I encountered an issue: ${response.data.error || "Unknown error"}`,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, errorMsg]);
+        const response = await queryAPI.sendQuery({
+          question: text,
+          limit: 10
+        }, token);
+
+        if (response.data.success) {
+          const assistantMsg: Message = {
+            id: uuidv4(),
+            role: 'assistant',
+            content: response.data.reasoning || "Here's the analysis for your request:",
+            result: response.data,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, assistantMsg]);
+        } else {
+          const errorMsg: Message = {
+            id: uuidv4(),
+            role: 'assistant',
+            content: `I encountered an issue: ${response.data.error || "Unknown error"}`,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, errorMsg]);
+        }
       }
     } catch (error: any) {
       const errorMsg: Message = {
         id: uuidv4(),
         role: 'assistant',
-        content: `Failed to execute query: ${error.message || "Network error"}`,
+        content: `Failed to execute: ${error.message || "Network error"}`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleChatModeChange = (mode: 'query' | 'diagnose') => {
+    setChatMode(mode);
   };
 
   const handleQuestionClick = async (question: string) => {
@@ -163,9 +214,9 @@ export default function Analytics() {
         toast.success("Chart saved successfully");
         queryClient.invalidateQueries({ queryKey: ['saved-charts'] });
 
-        // Update message history to reflect saved status
+        // Update the correct message history to reflect saved status
         if (messageId) {
-          setMessages(prev => prev.map(msg =>
+          setQueryMessages(prev => prev.map(msg =>
             msg.id === messageId && msg.result
               ? { ...msg, result: { ...msg.result, chart_id: chart.chart_id } }
               : msg
@@ -197,35 +248,35 @@ export default function Analytics() {
   // Load messages from localStorage when user changes
   useEffect(() => {
     if (!userId) return;
-    
-    const saved = localStorage.getItem(`lumina_chat_history_${userId}`);
-    if (saved) {
+    const loadHistory = (key: string) => {
+      const saved = localStorage.getItem(key);
+      if (!saved) return [];
       try {
-        const parsed = JSON.parse(saved);
-        // Convert string timestamps back to Date objects
-        const hydrated = parsed.map((m: any) => ({
-          ...m,
-          timestamp: new Date(m.timestamp)
-        }));
-        setMessages(hydrated);
-      } catch (e) {
-        console.error("Failed to parse chat history", e);
-      }
-    }
+        return JSON.parse(saved).map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }));
+      } catch { return []; }
+    };
+    setQueryMessages(loadHistory(`shopify_query_history_${userId}`));
+    setDiagnosticsMessages(loadHistory(`shopify_diagnostics_history_${userId}`));
   }, [userId]);
 
-  // Save messages to localStorage whenever they change
+  // Persist each history independently
   useEffect(() => {
-    if (userId && messages.length > 0) {
-      localStorage.setItem(`lumina_chat_history_${userId}`, JSON.stringify(messages));
-    }
-  }, [messages, userId]);
+    if (userId && queryMessages.length > 0)
+      localStorage.setItem(`shopify_query_history_${userId}`, JSON.stringify(queryMessages));
+  }, [queryMessages, userId]);
+
+  useEffect(() => {
+    if (userId && diagnosticsMessages.length > 0)
+      localStorage.setItem(`shopify_diagnostics_history_${userId}`, JSON.stringify(diagnosticsMessages));
+  }, [diagnosticsMessages, userId]);
 
   const handleClearHistory = () => {
     if (window.confirm("Are you sure you want to clear the chat history?")) {
-      setMessages([]);
+      setQueryMessages([]);
+      setDiagnosticsMessages([]);
       if (userId) {
-        localStorage.removeItem(`lumina_chat_history_${userId}`);
+        localStorage.removeItem(`shopify_query_history_${userId}`);
+        localStorage.removeItem(`shopify_diagnostics_history_${userId}`);
       }
       toast.success("Chat history cleared");
     }
@@ -245,7 +296,7 @@ export default function Analytics() {
               variant="ghost"
               size="sm"
               onClick={handleClearHistory}
-              disabled={messages.length === 0}
+          disabled={messages.length === 0}
               className="text-muted-foreground hover:text-destructive"
             >
               Clear History
@@ -271,17 +322,23 @@ export default function Analytics() {
           onQuestionClick={handleQuestionClick}
         />
 
+        {/* Proactive Anomaly Alert Center */}
+        <AnomalyAlertCenter
+          sourceId={activeSourceId}
+          onSuggestedQueryClick={handleSendMessage}
+        />
+
         {/* Main Chat Interface */}
         <div className="grid gap-6">
-          <ChatInterface
+        <ChatInterface
             messages={messages}
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
             onSaveChart={handleSaveChart}
             onDeleteChart={handleDeleteChart}
             onSuggestionClick={handleSendMessage}
-            insightsEnabled={insightsEnabled}
-            onToggleInsights={setInsightsEnabled}
+            chatMode={chatMode}
+            onChatModeChange={handleChatModeChange}
           />
         </div>
 

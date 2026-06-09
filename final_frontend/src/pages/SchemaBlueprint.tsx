@@ -69,18 +69,18 @@ export default function SchemaBlueprint() {
       setLoading(true);
       if (enrich) setAiEnriching(true);
       const token = await getToken();
-      const sourceId = (userId ? localStorage.getItem(`active_source_id_${userId}`) : null) || 'demo-source';
+      const sourceId = (userId ? localStorage.getItem(`active_source_id_${userId}`) : null) || 'demo-shopify-db';
       
       const response = await queryAPI.getSchema(sourceId, enrich, token);
       if (response.success) {
         setBlueprint(response.data);
       } else {
         setBlueprint(null);
-        toast.error(response.error || 'Failed to load Sentinel Map');
+        toast.error(response.error || 'Failed to load Database Structure Map');
       }
     } catch (error) {
       console.error('Error fetching blueprint:', error);
-      toast.error('Failed to load Sentinel Map');
+      toast.error('Failed to load Database Structure Map');
     } finally {
       setLoading(false);
       setAiEnriching(false);
@@ -204,7 +204,7 @@ export default function SchemaBlueprint() {
               className="w-full glass border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl h-10 font-bold"
             >
               {aiEnriching ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              Lumina Pulse
+              Enrich Schema
             </Button>
           </div>
         </aside>
@@ -219,7 +219,7 @@ export default function SchemaBlueprint() {
                 <div className="h-16 w-16 rounded-3xl bg-primary/20 flex items-center justify-center neon-glow">
                   <RefreshCw className="h-8 w-8 text-primary animate-spin" />
                 </div>
-                <p className="text-muted-foreground font-medium animate-pulse">Syncing Sentinel Map...</p>
+                <p className="text-muted-foreground font-medium animate-pulse">Syncing Database Structure Map...</p>
               </div>
             ) : !blueprint ? (
               <div className="h-full flex flex-col items-center justify-center gap-4">
@@ -416,10 +416,20 @@ export default function SchemaBlueprint() {
                         >
                           <div>
                             <div className={cn(
-                              "text-[9px] font-bold uppercase tracking-widest mb-0.5",
+                              "text-[9px] font-bold uppercase tracking-widest mb-0.5 flex items-center gap-1",
                               r.type === 'semantic' ? "text-amber-400" : "text-primary"
                             )}>
-                              {r.type === 'semantic' ? '⚡ Semantic' : '🔗 Foreign Key'}
+                              {r.type === 'semantic' ? (
+                                <>
+                                  <Sparkles className="h-3 w-3" />
+                                  Semantic
+                                </>
+                              ) : (
+                                <>
+                                  <LinkIcon className="h-3 w-3" />
+                                  Foreign Key
+                                </>
+                              )}
                             </div>
                             <div className="font-bold text-white text-sm">{r.neighbor}</div>
                           </div>
