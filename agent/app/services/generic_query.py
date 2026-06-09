@@ -60,7 +60,7 @@ def build_generic_prompt(
     limit: int,
     last_error: Optional[str] = None,
     history: Optional[list] = None,
-    column_stats: Optional[dict] = None  # NEW: {table: {col: {dtype, min/max/mean/unique_values}}}
+    column_stats: Optional[dict] = None  # {table: {col: {dtype, min/max/mean/unique_values}}}
 ) -> str:
     """
     Build a generic, database-agnostic prompt for SQL generation
@@ -109,7 +109,7 @@ def build_generic_prompt(
     if last_error:
         # Retry prompt with error feedback
         prompt = f"""{schema_context}{stats_context}
-
+ 
 Previous attempt failed with error: {last_error}
 
 Question: "{question}"

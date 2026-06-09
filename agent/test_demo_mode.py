@@ -66,7 +66,7 @@ print("\n3. Testing query on active source...")
 try:
     response = requests.post(
         f"{BASE_URL}/query",
-        json={"question": "How many patients do we have?", "limit": 10}
+        json={"question": "How many products do we have?", "limit": 10}
     )
     if response.status_code == 200:
         data = response.json()
@@ -87,7 +87,7 @@ print("\n" + "=" * 60)
 print("✅ Demo Mode Test Complete!")
 print("=" * 60)
 print("\n💡 Summary:")
-print("  - Demo mode auto-loads hospital database on startup")
+print("  - Demo mode auto-loads Shopify database on startup")
 print("  - Demo database is set as default active source")
 print("  - Users can still upload files or connect custom databases")
 print("  - Switch between sources using /data-sources/{id}/activate")

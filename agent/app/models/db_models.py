@@ -1,9 +1,7 @@
 from sqlalchemy import Column, String, Integer, DateTime, JSON, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
-from sqlalchemy import create_engine
+from sqlalchemy.orm import relationship
 from datetime import datetime
-import os
 
 Base = declarative_base()
 
@@ -17,6 +15,7 @@ class User(Base):
     charts = relationship("SavedChart", back_populates="user")
     dashboards = relationship("Dashboard", back_populates="user")
     data_sources = relationship("DataSource", back_populates="user")
+    anomalies = relationship("AnomalyHistory", back_populates="user")
 
 class SavedChart(Base):
     __tablename__ = "saved_charts"
@@ -63,11 +62,20 @@ class DataSource(Base):
     
     user = relationship("User", back_populates="data_sources")
 
-# Database setup
-# Support both METADATA_DATABASE_URL and DATABASE_URL env var names
-DATABASE_URL = os.getenv("METADATA_DATABASE_URL") or os.getenv("DATABASE_URL", "sqlite:///./metadata.db")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def init_db():
-    Base.metadata.create_all(bind=engine)
+class AnomalyHistory(Base):
+    __tablename__ = "anomaly_history"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(255), ForeignKey("users.user_id"), nullable=False)
+    source_id = Column(String(255), nullable=False)
+    anomaly_key = Column(String(255), nullable=False)  # unique per type/entity, e.g. "inventory:101"
+    metric = Column(String(255), nullable=False)
+    description = Column(String(1000), nullable=False)
+    financial_impact_dollars = Column(Integer, default=0)
+    severity = Column(String(50), nullable=False)
+    first_seen = Column(DateTime, default=datetime.now)
+    last_seen = Column(DateTime, default=datetime.now)
+    resolved = Column(Boolean, default=False)
+    resolved_at = Column(DateTime, nullable=True)
+    
+    user = relationship("User", back_populates="anomalies")

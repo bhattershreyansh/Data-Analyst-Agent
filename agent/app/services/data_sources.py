@@ -10,6 +10,7 @@ import pandas as pd
 from pathlib import Path
 import logging
 from datetime import datetime
+from app.core.security import security_manager
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +65,6 @@ class DataSourceManager:
             source_id = str(uuid.uuid4())
         
         try:
-            # Import security manager
-            from security import security_manager
-            
             # Create connection string based on database type
             if db_type == "postgresql":
                 connection_string = f"postgresql://{username}:{password}@{host}:{port}/{database}"
@@ -78,8 +76,6 @@ class DataSourceManager:
                 raise ValueError(f"Unsupported database type: {db_type}")
             
             # Create SQLAlchemy engine with safety options
-            # Note: Strict read-only enforcement for Postgres/MySQL requires DB user permissions.
-            # We add execution options to hint read-only behavior where possible.
             engine = create_engine(
                 connection_string, 
                 execution_options={"isolation_level": "AUTOCOMMIT"}
@@ -157,9 +153,6 @@ class DataSourceManager:
             sqlite_path = self.data_dir / f"{source_id}.db"
             write_engine = create_engine(f"sqlite:///{sqlite_path}")
 
-            # ------------------------------------------------------------------
-            # 1. Read file — CSV gets one table, Excel gets one table per sheet
-            # ------------------------------------------------------------------
             sheets: Dict[str, pd.DataFrame] = {}
 
             if file_type == "csv":
@@ -178,16 +171,12 @@ class DataSourceManager:
             else:
                 raise ValueError(f"Unsupported file type: {file_type}")
 
-            # ------------------------------------------------------------------
-            # 2. Write every sheet as a table in the SQLite DB
-            # ------------------------------------------------------------------
             tables: List[str] = []
             total_rows = 0
             all_previews: Dict[str, list] = {}
             all_stats: Dict[str, dict] = {}
 
             for tbl, df in sheets.items():
-                # Clean column names (remove special chars)
                 df.columns = [
                     "".join(c if c.isalnum() else "_" for c in str(col))
                     for col in df.columns
@@ -196,10 +185,8 @@ class DataSourceManager:
                 tables.append(tbl)
                 total_rows += len(df)
 
-                # 5-row data preview
                 all_previews[tbl] = df.head(5).to_dict(orient="records")
 
-                # Column-level stats for LLM context
                 stats: Dict[str, dict] = {}
                 for col in df.columns:
                     col_info: dict = {"dtype": str(df[col].dtype)}
@@ -211,7 +198,6 @@ class DataSourceManager:
                         })
                     else:
                         unique_vals = df[col].dropna().unique()
-                        # For small-cardinality categoricals, store all values for value-aware text-to-SQL
                         if len(unique_vals) <= 50:
                             col_info["unique_values"] = [str(v) for v in unique_vals[:50]]
                         col_info["unique_count"] = int(len(unique_vals))
@@ -220,12 +206,8 @@ class DataSourceManager:
 
             write_engine.dispose()
 
-            # Step 2: separate read engine
             engine = create_engine(f"sqlite:///{sqlite_path}")
 
-            # ------------------------------------------------------------------
-            # 3. Store metadata
-            # ------------------------------------------------------------------
             self.sources[source_id] = {
                 "source_id": source_id,
                 "name": name,
@@ -237,8 +219,8 @@ class DataSourceManager:
                 "table_count": len(tables),
                 "row_count": total_rows,
                 "column_count": sum(len(df.columns) for df in sheets.values()),
-                "previews": all_previews,   # {table: [{col: val}, ...]}
-                "column_stats": all_stats,   # {table: {col: {dtype, min/max/mean or unique_values}}}
+                "previews": all_previews,
+                "column_stats": all_stats,
                 "created_at": datetime.now().isoformat(),
                 "status": "loaded"
             }
@@ -264,30 +246,15 @@ class DataSourceManager:
             logger.error(f"Failed to load file: {e}")
             raise Exception(f"File loading failed: {str(e)}")
 
-    
     def get_source(self, source_id: str) -> Optional[Dict]:
-        """
-        Retrieve a data source by ID
-        
-        Args:
-            source_id: Unique identifier for the data source
-            
-        Returns:
-            Source metadata dict or None if not found
-        """
+        """Retrieve a data source by ID"""
         return self.sources.get(source_id)
     
     def list_sources(self) -> List[Dict]:
-        """
-        List all connected data sources
-        
-        Returns:
-            List of source metadata (without engine objects)
-        """
+        """List all connected data sources"""
         sources_list = []
         
         for source_id, source in self.sources.items():
-            # Create a copy without the engine object (not JSON serializable)
             source_info = {
                 "source_id": source["source_id"],
                 "name": source["name"],
@@ -298,7 +265,6 @@ class DataSourceManager:
                 "status": source["status"]
             }
             
-            # Add type-specific fields
             if source["type"] == "database":
                 source_info["db_type"] = source["db_type"]
             elif source["type"] == "file":
@@ -311,82 +277,44 @@ class DataSourceManager:
         return sources_list
     
     def remove_source(self, source_id: str) -> bool:
-        """
-        Remove a data source
-        
-        Args:
-            source_id: Unique identifier for the data source
-            
-        Returns:
-            True if removed, False if not found
-        """
+        """Remove a data source"""
         if source_id in self.sources:
             source = self.sources[source_id]
-            
-            # Dispose of engine
             source["engine"].dispose()
             
-            # Delete SQLite file if it's a file source
             if source["type"] == "file":
                 sqlite_path = self.data_dir / f"{source_id}.db"
                 if sqlite_path.exists():
                     sqlite_path.unlink()
             
-            # Remove from sources
             del self.sources[source_id]
-            
             logger.info(f"Removed data source: {source['name']}")
             return True
-        
         return False
     
     def get_engine(self, source_id: str):
-        """
-        Get SQLAlchemy engine for a data source
-        
-        Args:
-            source_id: Unique identifier for the data source
-            
-        Returns:
-            SQLAlchemy engine or None
-        """
+        """Get SQLAlchemy engine for a data source"""
         source = self.sources.get(source_id)
         return source["engine"] if source else None
     
     def get_tables(self, source_id: str) -> List[str]:
-        """
-        Get list of tables for a data source
-        
-        Args:
-            source_id: Unique identifier for the data source
-            
-        Returns:
-            List of table names
-        """
+        """Get list of tables for a data source"""
         source = self.sources.get(source_id)
         return source["tables"] if source else []
 
     def get_password(self, source_id: str) -> Optional[str]:
-        """
-        Securely retrieve decrypted password for a data source
-        
-        Args:
-            source_id: Data source ID
-            
-        Returns:
-            Decrypted password string or None
-        """
+        """Securely retrieve decrypted password for a data source"""
         source = self.sources.get(source_id)
         if not source or "encrypted_password" not in source:
             return None
         
         try:
-            from security import security_manager
             return security_manager.decrypt(source["encrypted_password"])
         except Exception as e:
             logger.error(f"Failed to decrypt password for {source_id}: {e}")
             return None
 
 
-# Global instance (will be initialized in server.py)
-data_source_manager = None
+# Global instance
+data_source_manager = DataSourceManager()
+active_sources = {}

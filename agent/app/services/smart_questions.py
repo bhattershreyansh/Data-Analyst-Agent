@@ -1,21 +1,22 @@
 """
 Smart Question Generator
-Analyzes data source schemas and generates intelligent, business-relevant questions
+Analyzes database schemas and generates intelligent, business-relevant questions
 """
 
 from typing import List, Dict, Optional
 from sqlalchemy import inspect
 import logging
+import json
+import re
 from datetime import datetime
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
-import os
-from dotenv import load_dotenv
-load_dotenv()
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
-# Initialize LLM
-groq_llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY"))
+# Initialize LLM using config settings
+groq_llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=settings.GROQ_API_KEY)
 
 
 def analyze_schema(engine, db_type: str = "mysql") -> Dict:
@@ -70,7 +71,6 @@ def detect_business_domain(schema_info: Dict) -> str:
     Returns:
         Detected domain (ecommerce, healthcare, hr, finance, general)
     """
-    # Collect all table and column names
     all_names = []
     for table in schema_info["tables"]:
         all_names.append(table["name"].lower())
@@ -79,7 +79,6 @@ def detect_business_domain(schema_info: Dict) -> str:
     
     names_str = " ".join(all_names)
     
-    # Domain detection patterns
     if any(keyword in names_str for keyword in ["product", "order", "customer", "cart", "price", "sales", "revenue"]):
         return "ecommerce"
     elif any(keyword in names_str for keyword in ["patient", "doctor", "hospital", "medical", "diagnosis", "treatment"]):
@@ -115,18 +114,15 @@ def detect_key_metrics(schema_info: Dict) -> Dict[str, List[str]]:
             col_type = col["type"].lower()
             full_name = f"{table['name']}.{col['name']}"
             
-            # Date columns
             if "date" in col_type or "time" in col_type or "date" in col_name or "time" in col_name:
                 metrics["date_columns"].append(full_name)
             
-            # Numeric columns (potential metrics)
             elif any(t in col_type for t in ["int", "float", "decimal", "numeric", "double"]):
                 if "id" not in col_name:
                     metrics["numeric_columns"].append(full_name)
                 else:
                     metrics["id_columns"].append(full_name)
             
-            # Category columns (for grouping)
             elif any(t in col_type for t in ["varchar", "char", "text", "string"]):
                 if "id" not in col_name and "name" in col_name or "type" in col_name or "category" in col_name or "status" in col_name:
                     metrics["category_columns"].append(full_name)
@@ -152,23 +148,20 @@ def generate_smart_questions(
     Returns:
         List of question objects
     """
-    # Build schema summary for LLM
     schema_summary = f"Database Type: {schema_info['db_type']}\n"
     schema_summary += f"Domain: {domain}\n"
     schema_summary += f"Tables ({schema_info['table_count']}):\n"
     
-    for table in schema_info["tables"][:10]:  # Limit to first 10 tables
+    for table in schema_info["tables"][:10]:
         schema_summary += f"\n- {table['name']} ({table['column_count']} columns):\n"
-        for col in table["columns"][:15]:  # Limit columns
+        for col in table["columns"][:15]:
             schema_summary += f"  - {col['name']} ({col['type']})\n"
     
-    # Add key metrics
     schema_summary += f"\nKey Metrics Detected:\n"
     schema_summary += f"- Date columns: {', '.join(key_metrics['date_columns'][:5])}\n"
     schema_summary += f"- Numeric columns: {', '.join(key_metrics['numeric_columns'][:5])}\n"
     schema_summary += f"- Category columns: {', '.join(key_metrics['category_columns'][:5])}\n"
     
-    # Build LLM prompt
     prompt = f"""{schema_summary}
 
 Generate {count} SMART, business-relevant questions for this database. 
@@ -207,45 +200,28 @@ Return ONLY the JSON array, nothing else."""
     try:
         response = groq_llm.invoke([HumanMessage(content=prompt)]).content.strip()
         
-        # Extract JSON from response
-        import json
-        import re
-        
-        # Remove markdown code blocks if present
         response = re.sub(r'```json\s*', '', response)
         response = re.sub(r'```\s*', '', response)
         response = response.strip()
         
         questions = json.loads(response)
         
-        # Add IDs and validate
         for i, q in enumerate(questions):
             q["id"] = f"q{i+1}"
             q["generated_at"] = datetime.now().isoformat()
         
         logger.info(f"Generated {len(questions)} smart questions for {domain} domain")
-        return questions[:count]  # Ensure we return exactly 'count' questions
+        return questions[:count]
         
     except Exception as e:
         logger.error(f"Failed to generate smart questions: {e}")
-        # Return fallback questions
         return get_fallback_questions(domain, key_metrics)
 
 
 def get_fallback_questions(domain: str, key_metrics: Dict[str, List[str]]) -> List[Dict]:
-    """
-    Generate fallback questions if LLM fails
-    
-    Args:
-        domain: Business domain
-        key_metrics: Detected key metrics
-    
-    Returns:
-        List of fallback questions
-    """
+    """Generate fallback questions if LLM fails"""
     fallback = []
     
-    # Generic smart questions based on available metrics
     if key_metrics["date_columns"] and key_metrics["numeric_columns"]:
         fallback.append({
             "id": "q1",

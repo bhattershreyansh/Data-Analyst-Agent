@@ -163,5 +163,170 @@
     "domain": "ecommerce",
     "source_name": "Product-Sales-Region.xlsx",
     "timestamp": "2026-03-27T15:10:26.665417"
+  },
+  "demo-shopify-user_3BWAw70ggWgaGHk8CGUWDAv345G": {
+    "questions": [
+      {
+        "question": "What are the top 5 products by total revenue?",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify the most profitable products, allowing for targeted marketing and inventory management strategies.",
+        "id": "q1",
+        "generated_at": "2026-06-09T22:41:44.246409"
+      },
+      {
+        "question": "Compare average order value by region",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question reveals regional differences in customer spending habits, enabling tailored marketing campaigns and resource allocation.",
+        "id": "q2",
+        "generated_at": "2026-06-09T22:41:44.246434"
+      },
+      {
+        "question": "Show the distribution of order totals by financial status",
+        "category": "Patterns",
+        "chart_type": "pie",
+        "reasoning": "This question highlights the proportion of orders by financial status, helping to identify trends and optimize payment processing and customer support.",
+        "id": "q3",
+        "generated_at": "2026-06-09T22:41:44.246436"
+      },
+      {
+        "question": "List the top 10 customers with the highest total spend",
+        "category": "Performance",
+        "chart_type": "table",
+        "reasoning": "This question identifies the most valuable customers, allowing for personalized marketing and loyalty programs to retain high-spending customers.",
+        "id": "q4",
+        "generated_at": "2026-06-09T22:41:44.246438"
+      },
+      {
+        "question": "What is the monthly trend of total orders and revenue?",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question displays the monthly pattern of orders and revenue, enabling the identification of seasonal fluctuations and informed decision-making for inventory management and marketing strategies.",
+        "id": "q5",
+        "generated_at": "2026-06-09T22:41:44.246439"
+      },
+      {
+        "question": "Compare the average discount value by discount type",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question evaluates the effectiveness of different discount types, helping to optimize discount strategies and improve profit margins.",
+        "id": "q6",
+        "generated_at": "2026-06-09T22:41:44.246440"
+      }
+    ],
+    "domain": "ecommerce",
+    "source_name": "\ud83c\udfea Demo Shopify Store",
+    "timestamp": "2026-06-09T22:41:44.246536"
+  },
+  "demo-shopify-user_3EuOlSin0ijePO5EPqR8aiQQsEO": {
+    "questions": [
+      {
+        "question": "What are the top 5 products by total revenue?",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify the most profitable products, allowing for informed decisions on inventory management and marketing strategies.",
+        "id": "q1",
+        "generated_at": "2026-06-09T22:42:27.753573"
+      },
+      {
+        "question": "Compare average order value between fulfilled and unfulfilled orders",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question reveals differences in order value based on fulfillment status, which can inform strategies to improve order fulfillment rates and customer satisfaction.",
+        "id": "q2",
+        "generated_at": "2026-06-09T22:42:27.753655"
+      },
+      {
+        "question": "Show the distribution of total tax by province",
+        "category": "Trends",
+        "chart_type": "pie",
+        "reasoning": "This question highlights regional tax trends, enabling the company to optimize tax strategies and improve profitability in different provinces.",
+        "id": "q3",
+        "generated_at": "2026-06-09T22:42:27.753657"
+      },
+      {
+        "question": "List the top 10 customers with the highest total spend",
+        "category": "Performance",
+        "chart_type": "table",
+        "reasoning": "This question identifies the most valuable customers, allowing for targeted marketing efforts and personalized service to retain these high-value customers.",
+        "id": "q4",
+        "generated_at": "2026-06-09T22:42:27.753658"
+      },
+      {
+        "question": "What is the average discount value used per order?",
+        "category": "Patterns",
+        "chart_type": "line",
+        "reasoning": "This question reveals the effectiveness of discount strategies and helps determine whether discounts are being overused or underused, informing future pricing and promotion decisions.",
+        "id": "q5",
+        "generated_at": "2026-06-09T22:42:27.753660"
+      },
+      {
+        "question": "Compare total revenue by month between 2023 and 2024",
+        "category": "Comparison",
+        "chart_type": "line",
+        "reasoning": "This question highlights year-over-year revenue trends, enabling the company to evaluate the effectiveness of its strategies and make informed decisions about future growth initiatives.",
+        "id": "q6",
+        "generated_at": "2026-06-09T22:42:27.753661"
+      }
+    ],
+    "domain": "ecommerce",
+    "source_name": "\ud83c\udfea Demo Shopify Store",
+    "timestamp": "2026-06-09T22:42:27.753801"
+  },
+  "ba7f1bb6-18fd-44e0-9760-32fec50a44f2": {
+    "questions": [
+      {
+        "question": "What are the top 5 vendors by total revenue?",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify the most profitable vendors, allowing the company to focus on strengthening relationships with them and potentially increasing revenue.",
+        "id": "q1",
+        "generated_at": "2026-06-10T00:36:02.559571"
+      },
+      {
+        "question": "Compare average order value between paid and pending financial statuses",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question reveals insights into the financial performance of orders, enabling the company to assess the effectiveness of its payment processing and identify areas for improvement.",
+        "id": "q2",
+        "generated_at": "2026-06-10T00:36:02.559609"
+      },
+      {
+        "question": "Show the distribution of order quantities by product category",
+        "category": "Patterns",
+        "chart_type": "pie",
+        "reasoning": "This question provides a understanding of consumer behavior and preferences, helping the company to optimize its product offerings and inventory management.",
+        "id": "q3",
+        "generated_at": "2026-06-10T00:36:02.559612"
+      },
+      {
+        "question": "List the top 10 products with the highest refund rates",
+        "category": "Performance",
+        "chart_type": "table",
+        "reasoning": "This question highlights products that may have quality issues or high customer dissatisfaction, allowing the company to address these problems and reduce refund rates.",
+        "id": "q4",
+        "generated_at": "2026-06-10T00:36:02.559615"
+      },
+      {
+        "question": "What is the monthly trend of total sales revenue?",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question helps the company identify seasonal fluctuations and trends in sales revenue, enabling it to make informed decisions about inventory management, marketing, and resource allocation.",
+        "id": "q5",
+        "generated_at": "2026-06-10T00:36:02.559617"
+      },
+      {
+        "question": "Compare the average price of products from different vendors",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question provides insights into the pricing strategies of different vendors, allowing the company to negotiate better prices, optimize its product offerings, and improve its competitiveness.",
+        "id": "q6",
+        "generated_at": "2026-06-10T00:36:02.559619"
+      }
+    ],
+    "domain": "ecommerce",
+    "source_name": "shopify_test_data.xlsx",
+    "timestamp": "2026-06-10T00:36:02.559742"
   }
 }

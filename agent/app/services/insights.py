@@ -1,16 +1,16 @@
+import os
+import re
+import json
+import logging
+from typing import List, Dict, Any
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
-import logging
-import json
-import re
-from typing import List, Dict, Any, Optional
-import os
-from dotenv import load_dotenv
-load_dotenv()
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
-# Initialize LLM for insights
-insight_llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY"))
+# Initialize LLM for insights using config settings
+insight_llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=settings.GROQ_API_KEY)
 
 class InsightEngine:
     def __init__(self):
@@ -45,7 +45,7 @@ class InsightEngine:
         sample_data = results[:20]
         domain = self.detect_domain(columns, [])
         
-        prompt = f"""You are a world-class Strategic Consultant and Senior Data Scientist.
+        prompt = f"""You are a world-class Strategic Consultant and Senior Data Analyst.
 Analyze the following query results and provide high-level executive insights.
 
 DOMAIN: {domain}
@@ -54,7 +54,7 @@ DATA RESULTS (JSON):
 {json.dumps(sample_data, indent=2)}
 
 INSTRUCTIONS:
-1. Provide "Strategic Intelligence" - 3-4 bullet points that go BEYOND describing the data.
+1. Provide "Strategic Insights" - 3-4 bullet points that go BEYOND describing the data.
 2. FOCUS ON SIGNIFICANCE: Why does this matter for the business? What are the hidden implications?
 3. PROVIDE RECOMMENDATIONS: What specific action should be taken based on this data?
 4. Identify outliers, surprising patterns, or risks that might not be obvious.

@@ -1,4 +1,3 @@
-import os
 import re
 import json
 import logging
@@ -7,11 +6,8 @@ from langgraph.graph import StateGraph, END
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 import pandas as pd
-from agnet_rag import get_engine as _get_engine
-import os
-from dotenv import load_dotenv
-load_dotenv()
-global_engine = _get_engine()  # Lazy-loaded on first use
+from app.core.config import settings
+from app.core.database import engine as global_engine
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +32,8 @@ class ForensicState(TypedDict):
     # Inputs
     question: str
     anomaly_data: List[Dict[str, Any]]
-    blueprint: Dict[str, Any]       # The Sentinel Map (tables + relationships)
-    engine: Optional[Any]           # Active DB engine (SQLite for files, MySQL for DB)
+    blueprint: Dict[str, Any]       # The Database Blueprint Map (tables + relationships)
+    engine: Optional[Any]           # Active DB engine
 
     # Internal Reasoning
     suspicious_tables: List[str]    # Identified by Schema Scout
@@ -55,10 +51,9 @@ class ForensicState(TypedDict):
 # 3. INITIALIZE LLM
 # ============================================
 
-groq_api_key = os.getenv("GROQ_API_KEY")
 model = ChatGroq(
     model="llama-3.3-70b-versatile",
-    groq_api_key=groq_api_key,
+    groq_api_key=settings.GROQ_API_KEY,
     temperature=0.1
 )
 
@@ -72,7 +67,7 @@ def validate_sql_safety(query: str) -> bool:
     Returns False and logs a warning if it contains any mutating commands.
     """
     if FORBIDDEN_SQL_RE.search(query):
-        logger.warning(f"🚫 SQL Safety Blocked: Mutating command detected in query: {query[:120]}...")
+        logger.warning(f"SQL Safety Blocked: Mutating command detected in query: {query[:120]}...")
         return False
     return True
 
@@ -105,8 +100,8 @@ def clean_json(raw: str) -> str:
 # ============================================
 
 def schema_scout(state: ForensicState) -> Dict:
-    """Agent 1: Identifies which tables to investigate using the Sentinel Map."""
-    logger.info("🕵️ Schema Scout: Scanning the Sentinel Map...")
+    """Agent 1: Identifies which tables to investigate using the Database Structure Map."""
+    logger.info("Schema Scout: Scanning the Database Structure Map...")
 
     blueprint_str = json.dumps(state['blueprint'], indent=2, default=str)
     anomaly_str = json.dumps(state['anomaly_data'][:10], indent=2, default=str)
@@ -118,7 +113,7 @@ ANOMALY REPORT:
 Question: "{state['question']}"
 Sample Data: {anomaly_str}
 
-THE SENTINEL MAP (all available tables and their relationships):
+THE DATABASE STRUCTURE MAP (all available tables and their relationships):
 {blueprint_str}
 
 INSTRUCTIONS:
@@ -146,7 +141,7 @@ Return ONLY a JSON list of strings, e.g., ["table1", "table2"].
     suspicious_tables = [t for t in suspicious_tables if t in known_tables]
 
     step = f"Schema Scout identified {len(suspicious_tables)} table(s) to investigate: {', '.join(suspicious_tables) or 'none found'}"
-    logger.info(f"🕵️ {step}")
+    logger.info(f"{step}")
 
     return {
         "suspicious_tables": suspicious_tables,
@@ -164,7 +159,7 @@ def data_sleuth(state: ForensicState) -> Dict:
     - Respects MAX_SQL_CALLS budget
     - Uses drill_down_hints from Judge on retry runs
     """
-    logger.info("🔬 Data Sleuth: Gathering forensic evidence...")
+    logger.info("Data Sleuth: Gathering forensic evidence...")
     investigation_steps = list(state.get("investigation_steps", []))
     evidence_found = list(state.get("evidence_found", []))
     sql_call_count = state.get("sql_call_count", 0)
@@ -173,7 +168,7 @@ def data_sleuth(state: ForensicState) -> Dict:
     # Use the active engine from state, fall back to global engine
     active_engine = state.get("engine") or global_engine
     if active_engine is None:
-        investigation_steps.append("⚠️ No active database engine — SQL investigation skipped.")
+        investigation_steps.append("No active database engine — SQL investigation skipped.")
         return {"evidence_found": evidence_found, "investigation_steps": investigation_steps, "sql_call_count": sql_call_count}
 
     # Determine SQL dialect for the prompt
@@ -191,7 +186,7 @@ JUDGE'S DRILL-DOWN INSTRUCTIONS (you must investigate these specific questions):
 
     suspicious = state.get('suspicious_tables', [])
     if not suspicious:
-        investigation_steps.append("⚠️ No suspicious tables identified by Scout. Halting investigation loop.")
+        investigation_steps.append("No suspicious tables identified by Scout. Halting investigation loop.")
         # Force the loop to exit by exhausting the budget
         return {
             "evidence_found": evidence_found,
@@ -202,7 +197,7 @@ JUDGE'S DRILL-DOWN INSTRUCTIONS (you must investigate these specific questions):
 
     for table in suspicious:
         if sql_call_count >= MAX_SQL_CALLS:
-            investigation_steps.append(f"⛔ SQL budget exhausted ({MAX_SQL_CALLS} calls). Stopping investigation.")
+            investigation_steps.append(f"SQL budget exhausted ({MAX_SQL_CALLS} calls). Stopping investigation.")
             break
             
         sql_call_count += 1 # Pay the cost upfront for attempting an investigation
@@ -239,10 +234,10 @@ Return ONLY the raw SQL query. No preamble, no backticks, no markdown.
 
         # Safety gate — block mutating SQL
         if not validate_sql_safety(sql_query):
-            investigation_steps.append(f"🚫 Blocked unsafe SQL on {table}: mutating command detected. (Call #{sql_call_count})")
+            investigation_steps.append(f"Blocked unsafe SQL on {table}: mutating command detected. (Call #{sql_call_count})")
             continue
 
-        logger.info(f"🔬 SQL call #{sql_call_count} on '{table}': {sql_query}")
+        logger.info(f"SQL call #{sql_call_count} on '{table}': {sql_query}")
 
         try:
             df = pd.read_sql(sql_query, active_engine)
@@ -276,13 +271,13 @@ def evidence_judge(state: ForensicState) -> Dict:
     evidence = state.get("evidence_found", [])
     investigation_steps = list(state.get("investigation_steps", []))
 
-    logger.info(f"⚖️ Judge: Evaluating evidence sufficiency ({sql_call_count}/{MAX_SQL_CALLS} SQL calls used)...")
+    logger.info(f"Judge: Evaluating evidence sufficiency ({sql_call_count}/{MAX_SQL_CALLS} SQL calls used)...")
 
     # Hard budget stop — always go to Narrator
     if sql_call_count >= MAX_SQL_CALLS:
-        step = f"⚖️ Judge: SQL budget reached ({MAX_SQL_CALLS} calls). Proceeding to Narrator."
+        step = f"Judge: SQL budget reached ({MAX_SQL_CALLS} calls). Proceeding to Narrator."
         investigation_steps.append(step)
-        logger.info(f"⚖️ Judge: Budget exhausted → Narrator")
+        logger.info(f"Judge: Budget exhausted -> Narrator")
         return {
             "drill_down_hints": [],   # Empty = route to narrator
             "investigation_steps": investigation_steps
@@ -290,9 +285,9 @@ def evidence_judge(state: ForensicState) -> Dict:
 
     # No evidence at all → need a broader sweep
     if not evidence:
-        step = "⚖️ Judge: No evidence yet. Requesting broader Sleuth sweep."
+        step = "Judge: No evidence yet. Requesting broader Sleuth sweep."
         investigation_steps.append(step)
-        logger.info("⚖️ Judge: No evidence → drilling deeper")
+        logger.info("Judge: No evidence -> drilling deeper")
         return {
             "drill_down_hints": ["Perform a broad scan of all available columns to find any unusual patterns, distributions, or outliers"],
             "investigation_steps": investigation_steps
@@ -337,15 +332,15 @@ Return ONLY valid JSON:
         drill_down_hints = []
 
     if is_sufficient:
-        verdict_str = "✅ Sufficient evidence"
-        hints_to_return = []          # Empty → router sends to Narrator
+        verdict_str = "Sufficient evidence"
+        hints_to_return = []          # Empty -> router sends to Narrator
     else:
-        verdict_str = "🔄 Needs more — drilling deeper"
+        verdict_str = "Needs more — drilling deeper"
         hints_to_return = drill_down_hints or ["Dig deeper into the data distribution"]
 
-    step = f"⚖️ Judge [{sql_call_count}/{MAX_SQL_CALLS} calls]: {verdict_str}. {reason}"
+    step = f"Judge [{sql_call_count}/{MAX_SQL_CALLS} calls]: {verdict_str}. {reason}"
     investigation_steps.append(step)
-    logger.info(f"⚖️ Judge verdict: {verdict_str}")
+    logger.info(f"Judge verdict: {verdict_str}")
 
     return {
         "drill_down_hints": hints_to_return,
@@ -355,13 +350,13 @@ Return ONLY valid JSON:
 
 def forensic_narrator(state: ForensicState) -> Dict:
     """Agent 3: Synthesizes all evidence into a sharp, quantified causal verdict."""
-    logger.info("⚖️ Forensic Narrator: Building the final verdict...")
+    logger.info("Forensic Narrator: Building the final verdict...")
 
     evidence_str = json.dumps(state.get('evidence_found', []), indent=2, default=str)
     anomaly_str = json.dumps(state['anomaly_data'][:10], indent=2, default=str)
     sql_calls = state.get('sql_call_count', 0)
 
-    prompt = f"""You are the 'Chief Forensic Analyst' at Lumina AI — a world-class data detective.
+    prompt = f"""You are the 'Chief Root Cause Analyst' at Shopify Data Analyst Agent — a world-class data detective.
 Your job is ROOT CAUSE ANALYSIS, not data summarization.
 
 TRIGGER DATA (what the user originally saw):
@@ -430,14 +425,13 @@ def judge_routing(state: ForensicState) -> str:
     """
     Conditional edge: if Judge left drill_down_hints, route back to Sleuth.
     Empty hints (or budget exhausted) routes to Narrator.
-    Using drill_down_hints as the signal avoids LangGraph boolean default collision.
     """
     hints = state.get("drill_down_hints", [])
     sql_count = state.get("sql_call_count", 0)
     if hints and sql_count < MAX_SQL_CALLS:
-        logger.info(f"⚖️ Router: drill-down hints present → Sleuth (call {sql_count + 1})")
+        logger.info(f"Router: drill-down hints present -> Sleuth (call {sql_count + 1})")
         return "sleuth"
-    logger.info("⚖️ Router: no hints or budget exhausted → Narrator")
+    logger.info("Router: no hints or budget exhausted -> Narrator")
     return "narrator"
 
 # ============================================
@@ -469,9 +463,10 @@ workflow.add_conditional_edges(
     }
 )
 
+# End
 workflow.add_edge("narrator", END)
 
 # Compile
 forensic_engine = workflow.compile()
 
-logger.info("📡 Forensic Intelligence Graph compiled — Judge node active, max 5 SQL calls enforced.")
+logger.info("Diagnostics Graph compiled — Judge node active, max 5 SQL calls enforced.")
