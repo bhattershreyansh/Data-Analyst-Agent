@@ -10,7 +10,10 @@ import DashboardView from "./pages/DashboardView";
 import SchemaBlueprint from "./pages/SchemaBlueprint";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
-import { Show, RedirectToSignIn, useAuth } from "@clerk/react";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useAuth } from "@/context/AuthContext";
+import { Login } from "./pages/Login";
+import { Register } from "./pages/Register";
 import { Footer } from "@/components/Footer";
 
 const queryClient = new QueryClient({
@@ -25,21 +28,13 @@ const queryClient = new QueryClient({
 // Redirects already-signed-in users away from the landing page
 const HomeOrRedirect = () => {
   const { isSignedIn, isLoaded } = useAuth();
-  if (!isLoaded) return null; // Wait for Clerk to load
+  if (!isLoaded) return null;
   if (isSignedIn) return <Navigate to="/analytics" replace />;
   return <Home />;
 };
 
-// Wraps a page so that unauthenticated users are sent to Clerk sign-in
-const Protected = ({ children }: { children: React.ReactNode }) => (
-  <>
-    <Show when="signed-in">{children}</Show>
-    <Show when="signed-out"><RedirectToSignIn /></Show>
-  </>
-);
-
 const ProtectedNotFound = () => (
-  <Protected><NotFound /></Protected>
+  <ProtectedRoute><NotFound /></ProtectedRoute>
 );
 
 const App = () => (
@@ -53,10 +48,12 @@ const App = () => (
             <main className="flex-grow">
               <Routes>
                 <Route path="/" element={<HomeOrRedirect />} />
-                <Route path="/analytics" element={<Protected><Analytics /></Protected>} />
-                <Route path="/dashboards" element={<Protected><Dashboards /></Protected>} />
-                <Route path="/dashboard/:id" element={<Protected><DashboardView /></Protected>} />
-                <Route path="/blueprint" element={<Protected><SchemaBlueprint /></Protected>} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                <Route path="/dashboards" element={<ProtectedRoute><Dashboards /></ProtectedRoute>} />
+                <Route path="/dashboard/:id" element={<ProtectedRoute><DashboardView /></ProtectedRoute>} />
+                <Route path="/blueprint" element={<ProtectedRoute><SchemaBlueprint /></ProtectedRoute>} />
                 <Route path="*" element={<ProtectedNotFound />} />
               </Routes>
             </main>

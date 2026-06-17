@@ -1,5 +1,5 @@
 // Replace the entire api.ts file with:
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 // Revised API functions with authentication support
 export const api = {
@@ -131,6 +131,17 @@ export interface DiagnoseResponse {
   }[];
   investigation_steps: string[];
   timestamp: string;
+}
+
+export interface AnomalyItem {
+  anomaly_key: string;
+  metric: string;
+  severity: string;
+  state: 'NEW' | 'ONGOING' | 'RESOLVED';
+  duration: string;
+  description: string;
+  financial_impact_dollars: number;
+  suggested_query: string;
 }
 
 export interface DashboardCreateRequest {

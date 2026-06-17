@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/react";
+import { useAuth } from '@/context/AuthContext';
 import { Database, Upload, Plus, Check, X, Folder } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {

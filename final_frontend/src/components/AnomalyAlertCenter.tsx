@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { dataSourcesAPI, AnomalyItem } from '@/lib/api';
-import { useAuth } from '@clerk/react';
+import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -46,7 +46,19 @@ export function AnomalyAlertCenter({ sourceId, onSuggestedQueryClick }: AnomalyA
     }
   };
 
-  if (!sourceId) return null;
+  if (!sourceId) {
+    return (
+      <Card className="glass border-white/10 p-8 rounded-3xl text-center space-y-4">
+        <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-primary w-fit mx-auto">
+          <ShieldAlert className="h-8 w-8 opacity-30" />
+        </div>
+        <h3 className="text-xl font-bold text-white tracking-tight">Anomaly Monitor</h3>
+        <p className="text-sm text-muted-foreground/60 max-w-xs mx-auto">
+          Connect a data source to enable proactive anomaly scanning and financial impact analysis.
+        </p>
+      </Card>
+    );
+  }
 
   const activeAlerts = anomalies.filter(a => a.state !== 'RESOLVED');
   const resolvedAlerts = anomalies.filter(a => a.state === 'RESOLVED');

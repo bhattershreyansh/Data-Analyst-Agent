@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.core.security import get_current_user
 from app.schemas.api_schemas import QueryRequest, QueryResponse
 from app.services.data_sources import data_source_manager, active_sources
-from app.services.rag_engine import default_sql_query_rag, generic_sql_query_rag
+from app.services.rag_engine import generic_sql_query_rag
 from app.services.insights import insight_engine
 from app.services.caching import cache_manager
 
@@ -42,11 +42,10 @@ async def process_query(
         result = {}
         
         if not active_source_id:
-            # No active source - use demo database as fallback
-            logger.warning(f"No active source for session {session_id}, using demo DB")
-            result = default_sql_query_rag(
-                question=request.question,
-                limit=request.limit
+            return QueryResponse(
+                success=False,
+                error="No active data source. Please upload a file or connect a database before querying.",
+                execution_time_ms=0
             )
         else:
             # Get the active data source

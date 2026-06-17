@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@clerk/react";
+import { useAuth } from '@/context/AuthContext';
 import { dataSourcesAPI } from "@/lib/api";
 
 interface SmartQuestion {

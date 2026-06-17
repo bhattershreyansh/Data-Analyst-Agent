@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Schema Blueprint | Data Analyst Agent</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&amp;family=Jetbrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+        }
+        
+        /* Custom Blueprint Pattern Background */
+        .blueprint-grid {
+            background-image: 
+                linear-gradient(to right, rgba(42, 53, 72, 0.3) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(42, 53, 72, 0.3) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        /* SVG Relationship Lines */
+        .connector-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .relationship-line {
+            stroke: #a7c8ff;
+            stroke-width: 1.5;
+            stroke-dasharray: 4 2;
+            fill: none;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+        }
+
+        .relationship-line:hover {
+            opacity: 0.9;
+            stroke-dasharray: 0;
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#2a3548",
+                        "surface-bright": "#2f3a4c",
+                        "on-primary-fixed-variant": "#004788",
+                        "surface-dim": "#081425",
+                        "secondary": "#bec6e0",
+                        "surface-container-low": "#111c2d",
+                        "on-tertiary": "#213145",
+                        "on-secondary": "#283044",
+                        "on-surface": "#d8e3fb",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "outline-variant": "#414753",
+                        "surface-container-lowest": "#040e1f",
+                        "outline": "#8a919f",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "inverse-primary": "#005eb2",
+                        "tertiary-container": "#8292aa",
+                        "surface-variant": "#2a3548",
+                        "primary": "#a7c8ff",
+                        "inverse-on-surface": "#263143",
+                        "on-primary-container": "#002a55",
+                        "error": "#ffb4ab",
+                        "surface": "#081425",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#dae2fd",
+                        "inverse-surface": "#d8e3fb",
+                        "on-tertiary-container": "#1a2b3e",
+                        "tertiary": "#b7c8e1",
+                        "background": "#081425",
+                        "on-primary": "#003061",
+                        "tertiary-fixed-dim": "#b7c8e1",
+                        "tertiary-fixed": "#d3e4fe",
+                        "error-container": "#93000a",
+                        "secondary-container": "#3f465c",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed-variant": "#38485d",
+                        "on-surface-variant": "#c0c6d5",
+                        "on-secondary-fixed": "#131b2e",
+                        "on-primary-fixed": "#001b3c",
+                        "primary-container": "#3291ff",
+                        "on-tertiary-fixed": "#0b1c30",
+                        "surface-tint": "#a7c8ff",
+                        "surface-container-high": "#1f2a3c",
+                        "on-secondary-container": "#adb4ce",
+                        "on-background": "#d8e3fb",
+                        "surface-container": "#152031",
+                        "primary-fixed": "#d5e3ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        unit: "4px",
+                        "stack-dense": "4px",
+                        gutter: "16px",
+                        "container-padding": "24px",
+                        "stack-compact": "8px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Geist"],
+                        "display": ["Geist"],
+                        "body": ["Geist"],
+                        "label": ["Jetbrains Mono"],
+                        "data-mono": ["JetBrains Mono"]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<header class="bg-surface docked full-width top-0 border-b border-outline-variant flex justify-between items-center w-full px-gutter h-16 max-w-full mx-auto z-50">
+<div class="flex items-center gap-gutter">
+<span class="font-headline text-xl font-bold text-primary">Data Analyst Agent</span>
+<nav class="hidden md:flex items-center gap-6 ml-8">
+<a class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-80 text-sm" href="#">Home</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-80 text-sm" href="#">Analytics</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 cursor-pointer active:opacity-80 text-sm" href="#">Blueprint</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-80 text-sm" href="#">Dashboards</a>
+</nav>
+</div>
+<div class="flex items-center gap-gutter">
+<div class="hidden lg:flex items-center bg-surface-container-highest px-3 py-1.5 rounded-lg border border-outline-variant">
+<span class="material-symbols-outlined text-primary text-[18px] mr-2" data-icon="database" style="font-variation-settings: 'FILL' 1;">database</span>
+<span class="font-data-mono text-xs text-on-surface-variant">Data Source: Connected</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline ml-2">
+<img alt="User Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLsEnhDqfFg-wcakj0NyJYoIhPkuhUR3R839WBfJvixakb-IJZnbYFGAucMWANq5QxYb6P1jfp3OD3mcZBiTc4-_QbLbG_I4jkDyCTIlzjXr4YA_EJqym_53gNp1qNfqI7q9pJlhMXmkMz76TGUJ5eXa5qzHzwLWPRL52gUXtZRiig82iQvWxtieufbbBD6ETI8JQlKsZgfWe0qwavh166-cRrgZKIuYz5Zu5u62CNFT9qMl1II6q99gGwhYhiyKHjUMVtFQHu7FI"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="relative h-[calc(100vh-64px)] overflow-hidden blueprint-grid flex flex-col">
+<!-- Utility Bar (Sub-header) -->
+<div class="w-full px-container-padding py-stack-compact flex justify-between items-center bg-surface/80 backdrop-blur-md border-b border-outline-variant z-10">
+<div class="flex items-center gap-stack-compact flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]" data-icon="search">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none text-on-surface" placeholder="Search Schema (tables, columns, types)..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-gutter">
+<div class="flex items-center gap-2 text-outline font-data-mono text-xs bg-surface-container px-3 py-2 rounded border border-outline-variant">
+<span class="material-symbols-outlined text-[16px] animate-pulse" data-icon="hub">hub</span>
+                    Discovered: 4 Tables, 12 Relationships
+                </div>
+<button class="bg-primary hover:bg-primary/80 text-on-primary font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-all active:scale-95 text-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="sync">sync</span>
+                    Refresh Mapping
+                </button>
+</div>
+</div>
+<!-- Canvas Area -->
+<div class="flex-1 relative p-container-padding overflow-auto scrollbar-hide">
+<!-- SVG Connectors Layer -->
+<svg class="connector-svg" id="schema-connectors">
+<path class="relationship-line" d="M 380 250 L 580 400" id="line-orders-products"></path>
+<path class="relationship-line" d="M 380 480 L 580 480" id="line-orders-customers"></path>
+<path class="relationship-line" d="M 780 250 L 980 250" id="line-products-refunds"></path>
+</svg>
+<!-- Card Grid -->
+<div class="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter lg:gap-12 min-w-[1200px]">
+<!-- Table Card: Orders -->
+<div class="bg-surface-container-low border border-outline-variant rounded-xl shadow-lg p-0 flex flex-col hover:border-primary transition-colors group" id="table-orders">
+<div class="p-3 border-b border-outline-variant flex items-center justify-between bg-surface-container-high/50 rounded-t-xl">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="table_chart">table_chart</span>
+<span class="font-headline text-on-surface font-bold">Orders</span>
+</div>
+<span class="text-[10px] uppercase tracking-wider font-bold bg-primary-container/20 text-primary px-2 py-0.5 rounded border border-primary/30">8.4M Rows</span>
+</div>
+<div class="p-3 space-y-1">
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default group/row" id="orders-id">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="tag">tag</span>
+<span class="font-data-mono text-sm text-on-surface">order_id</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">PK</span>
+</div>
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default" id="orders-product-id">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="link">link</span>
+<span class="font-data-mono text-sm text-primary">product_id</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">FK</span>
+</div>
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="calendar_month">calendar_month</span>
+<span class="font-data-mono text-sm text-on-surface">created_at</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">DATE</span>
+</div>
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="payments">payments</span>
+<span class="font-data-mono text-sm text-on-surface">total_amount</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">DEC</span>
+</div>
+</div>
+</div>
+<!-- Table Card: Products -->
+<div class="bg-surface-container-low border border-outline-variant rounded-xl shadow-lg p-0 flex flex-col hover:border-primary transition-colors group mt-24" id="table-products">
+<div class="p-3 border-b border-outline-variant flex items-center justify-between bg-surface-container-high/50 rounded-t-xl">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="inventory_2">inventory_2</span>
+<span class="font-headline text-on-surface font-bold">Products</span>
+</div>
+<span class="text-[10px] uppercase tracking-wider font-bold bg-secondary-container/20 text-secondary px-2 py-0.5 rounded border border-secondary/30">12k Rows</span>
+</div>
+<div class="p-3 space-y-1">
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default" id="products-id">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="tag">tag</span>
+<span class="font-data-mono text-sm text-on-surface">id</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">PK</span>
+</div>
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="abc">abc</span>
+<span class="font-data-mono text-sm text-on-surface">sku</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">STR</span>
+</div>
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="description">description</span>
+<span class="font-data-mono text-sm text-on-surface">name</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">STR</span>
+</div>
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="category">category</span>
+<span class="font-data-mono text-sm text-on-surface">category_id</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">FK</span>
+</div>
+</div>
+</div>
+<!-- Table Card: Refunds -->
+<div class="bg-surface-container-low border border-outline-variant rounded-xl shadow-lg p-0 flex flex-col hover:border-primary transition-colors group" id="table-refunds">
+<div class="p-3 border-b border-outline-variant flex items-center justify-between bg-surface-container-high/50 rounded-t-xl">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-error" data-icon="rebase_edit">rebase_edit</span>
+<span class="font-headline text-on-surface font-bold">Refunds</span>
+</div>
+<span class="text-[10px] uppercase tracking-wider font-bold bg-error-container/20 text-error px-2 py-0.5 rounded border border-error/30">45k Rows</span>
+</div>
+<div class="p-3 space-y-1">
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="tag">tag</span>
+<span class="font-data-mono text-sm text-on-surface">refund_id</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">PK</span>
+</div>
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default" id="refunds-order-id">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="link">link</span>
+<span class="font-data-mono text-sm text-primary">order_id</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">FK</span>
+</div>
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="report">report</span>
+<span class="font-data-mono text-sm text-on-surface">reason_code</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">INT</span>
+</div>
+</div>
+</div>
+<!-- Table Card: Customers -->
+<div class="bg-surface-container-low border border-outline-variant rounded-xl shadow-lg p-0 flex flex-col hover:border-primary transition-colors group mt-48" id="table-customers">
+<div class="p-3 border-b border-outline-variant flex items-center justify-between bg-surface-container-high/50 rounded-t-xl">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="person">person</span>
+<span class="font-headline text-on-surface font-bold">Customers</span>
+</div>
+<span class="text-[10px] uppercase tracking-wider font-bold bg-primary-container/20 text-primary px-2 py-0.5 rounded border border-primary/30">2.1M Rows</span>
+</div>
+<div class="p-3 space-y-1">
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="tag">tag</span>
+<span class="font-data-mono text-sm text-on-surface">cust_id</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">PK</span>
+</div>
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="mail">mail</span>
+<span class="font-data-mono text-sm text-on-surface">email</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">STR</span>
+</div>
+<div class="flex justify-between items-center p-1.5 hover:bg-surface-container-highest rounded cursor-default">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="public">public</span>
+<span class="font-data-mono text-sm text-on-surface">country_code</span>
+</div>
+<span class="text-outline font-data-mono text-[10px]">STR</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Semantic Insights Footer -->
+<div class="w-full bg-surface-container-low border-t border-outline-variant p-stack-compact flex items-center justify-between px-container-padding">
+<div class="flex items-center gap-gutter">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full bg-primary-container border border-background flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-on-primary-container" data-icon="bolt" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-secondary-container border border-background flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-on-secondary-container" data-icon="psychology" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+</div>
+<p class="text-sm text-on-surface-variant italic">
+                    Agent discovered a high-cardinality relationship between <span class="text-primary font-bold">Orders.cust_id</span> and <span class="text-primary font-bold">Customers.cust_id</span>.
+                </p>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] uppercase tracking-wider font-bold text-outline">Confidence Score</span>
+<div class="flex gap-1">
+<div class="w-3 h-1.5 bg-primary rounded-full"></div>
+<div class="w-3 h-1.5 bg-primary rounded-full"></div>
+<div class="w-3 h-1.5 bg-primary rounded-full"></div>
+<div class="w-3 h-1.5 bg-primary rounded-full"></div>
+<div class="w-3 h-1.5 bg-outline-variant rounded-full opacity-30"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Version Footer -->
+<footer class="bg-surface-dim docked full-width bottom-0 border-t border-outline-variant flex justify-between items-center px-gutter py-unit w-full z-50">
+<div class="text-[10px] uppercase tracking-wider font-bold text-outline">v2.4.1-stable</div>
+<div class="flex gap-gutter font-data-mono text-xs text-on-surface-variant">
+<a class="hover:text-on-surface transition-colors cursor-pointer underline-offset-4 hover:underline" href="#">Platform Status</a>
+<a class="hover:text-on-surface transition-colors cursor-pointer underline-offset-4 hover:underline" href="#">API Docs</a>
+<a class="hover:text-on-surface transition-colors cursor-pointer underline-offset-4 hover:underline" href="#">Privacy</a>
+</div>
+</footer>
+<script>
+        // Micro-interaction for drawing/updating connector lines
+        function updateLines() {
+            const svg = document.getElementById('schema-connectors');
+            if (!svg) return;
+            const svgRect = svg.getBoundingClientRect();
+
+            function getCenter(elId) {
+                const el = document.getElementById(elId);
+                if (!el) return {x: 0, y: 0};
+                const rect = el.getBoundingClientRect();
+                return {
+                    x: rect.left + rect.width / 2 - svgRect.left,
+                    y: rect.top + rect.height / 2 - svgRect.top
+                };
+            }
+
+            const p1 = getCenter('orders-product-id');
+            const p2 = getCenter('products-id');
+            document.getElementById('line-orders-products').setAttribute('d', `M ${p1.x} ${p1.y} C ${p1.x + 50} ${p1.y}, ${p2.x - 50} ${p2.y}, ${p2.x} ${p2.y}`);
+
+            const c1 = getCenter('orders-id');
+            const c2 = getCenter('table-customers'); 
+            document.getElementById('line-orders-customers').setAttribute('d', `M ${c1.x} ${c1.y} Q ${(c1.x + c2.x)/2} ${c1.y + 100}, ${c2.x} ${c2.y}`);
+            
+            const r1 = getCenter('refunds-order-id');
+            const r2 = getCenter('orders-id');
+            document.getElementById('line-products-refunds').setAttribute('d', `M ${r1.x} ${r1.y} C ${r1.x - 50} ${r1.y}, ${r2.x + 50} ${r2.y}, ${r2.x} ${r2.y}`);
+        }
+
+        window.addEventListener('resize', updateLines);
+        window.addEventListener('load', updateLines);
+
+        document.querySelectorAll('.bg-surface-container-low').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                const lines = document.querySelectorAll('.relationship-line');
+                lines.forEach(l => l.style.opacity = '0.05');
+                
+                if (card.id === 'table-orders') {
+                    document.getElementById('line-orders-products').style.opacity = '1';
+                    document.getElementById('line-orders-customers').style.opacity = '1';
+                    document.getElementById('line-products-refunds').style.opacity = '1';
+                }
+            });
+            card.addEventListener('mouseleave', () => {
+                document.querySelectorAll('.relationship-line').forEach(l => l.style.opacity = '0.3');
+            });
+        });
+    </script>
+</body></html>

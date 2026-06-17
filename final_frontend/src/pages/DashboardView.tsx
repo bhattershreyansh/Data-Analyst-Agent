@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@clerk/react';
+import { useAuth } from '@/context/AuthContext';
 import { useParams, Link } from 'react-router-dom';
 import { dashboardAPI } from '@/lib/api';
 import { Card } from '@/components/ui/card';

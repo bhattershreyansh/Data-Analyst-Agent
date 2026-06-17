@@ -328,5 +328,115 @@
     "domain": "ecommerce",
     "source_name": "shopify_test_data.xlsx",
     "timestamp": "2026-06-10T00:36:02.559742"
+  },
+  "ba47cb5b-4bd9-4238-b3c0-65de45b20372": {
+    "questions": [
+      {
+        "question": "What are the top 5 products by total revenue?",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify best-selling products, informing inventory management and marketing strategies.",
+        "id": "q1",
+        "generated_at": "2026-06-17T21:51:06.588916"
+      },
+      {
+        "question": "Compare average order value between paid and discounted orders",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question reveals the impact of discounts on order value, guiding pricing and promotion decisions.",
+        "id": "q2",
+        "generated_at": "2026-06-17T21:51:06.588939"
+      },
+      {
+        "question": "Show the distribution of order financial status",
+        "category": "Patterns",
+        "chart_type": "pie",
+        "reasoning": "This question provides insight into the proportion of successful and pending orders, helping to identify potential issues in the payment process.",
+        "id": "q3",
+        "generated_at": "2026-06-17T21:51:06.588941"
+      },
+      {
+        "question": "List the top 10 vendors by total order quantity",
+        "category": "Performance",
+        "chart_type": "table",
+        "reasoning": "This question identifies the most reliable and in-demand vendors, facilitating supplier relationship management and inventory optimization.",
+        "id": "q4",
+        "generated_at": "2026-06-17T21:51:06.588942"
+      },
+      {
+        "question": "What is the average refund amount by reason?",
+        "category": "Patterns",
+        "chart_type": "bar",
+        "reasoning": "This question helps to identify common reasons for refunds, enabling targeted quality control and customer satisfaction improvements.",
+        "id": "q5",
+        "generated_at": "2026-06-17T21:51:06.588944"
+      },
+      {
+        "question": "Show the monthly trend of total order value",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question reveals seasonal fluctuations and growth patterns in sales, informing business planning and resource allocation.",
+        "id": "q6",
+        "generated_at": "2026-06-17T21:51:06.588945"
+      }
+    ],
+    "domain": "ecommerce",
+    "source_name": "shopify_test_data.xlsx",
+    "timestamp": "2026-06-17T21:51:06.589043"
+  },
+  "demo-shopify-82be1a04-daea-4025-b619-3518c528a9de": {
+    "questions": [
+      {
+        "question": "What is the total revenue by product type?",
+        "category": "Trends",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify which product types are generating the most revenue, allowing for informed decisions on inventory management and marketing strategies.",
+        "id": "q1",
+        "generated_at": "2026-06-17T21:52:55.608710"
+      },
+      {
+        "question": "Compare the average order value between fulfilled and unfulfilled orders",
+        "category": "Comparison",
+        "chart_type": "pie",
+        "reasoning": "This question provides insight into the financial impact of order fulfillment status, enabling businesses to optimize their fulfillment processes and improve customer satisfaction.",
+        "id": "q2",
+        "generated_at": "2026-06-17T21:52:55.608723"
+      },
+      {
+        "question": "Show the top 10 customers by total spent",
+        "category": "Performance",
+        "chart_type": "table",
+        "reasoning": "This question identifies the most valuable customers, allowing businesses to target them with personalized marketing campaigns and loyalty programs to increase customer retention.",
+        "id": "q3",
+        "generated_at": "2026-06-17T21:52:55.608726"
+      },
+      {
+        "question": "List the products with the highest average discount applied",
+        "category": "Patterns",
+        "chart_type": "line",
+        "reasoning": "This question reveals which products are most frequently discounted, helping businesses to adjust their pricing strategies and optimize their discount programs.",
+        "id": "q4",
+        "generated_at": "2026-06-17T21:52:55.608729"
+      },
+      {
+        "question": "What is the monthly distribution of new customer acquisitions?",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question provides insight into customer acquisition patterns, enabling businesses to plan and allocate resources effectively for marketing and customer retention initiatives.",
+        "id": "q5",
+        "generated_at": "2026-06-17T21:52:55.608731"
+      },
+      {
+        "question": "Show the average order value by customer location (province)",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify regional differences in customer spending habits, allowing businesses to tailor their marketing strategies and product offerings to specific geographic areas.",
+        "id": "q6",
+        "generated_at": "2026-06-17T21:52:55.608733"
+      }
+    ],
+    "domain": "ecommerce",
+    "source_name": "Demo Shopify Store",
+    "timestamp": "2026-06-17T21:52:55.608826"
   }
 }

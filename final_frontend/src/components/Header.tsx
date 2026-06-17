@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { useAuth } from "@clerk/react";
+import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from "react-router-dom";
 import { dataSourcesAPI } from "@/lib/api";
 import { Sparkles, ShoppingBag } from 'lucide-react';
@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { DataSourceSelector } from '@/components/DataSourceSelector';
 import { FileUploadDialog } from '@/components/FileUploadDialog';
 import { DatabaseConnectionDialog } from '@/components/DatabaseConnectionDialog';
-import { Show, UserButton, SignInButton } from "@clerk/react";
+
 
 interface HeaderProps {
   actions?: ReactNode;
@@ -17,7 +17,7 @@ interface HeaderProps {
 export function Header({ actions }: HeaderProps) {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
    const [connectDialogOpen, setConnectDialogOpen] = useState(false);
-   const { getToken } = useAuth();
+   const { getToken, isSignedIn, logout } = useAuth();
    const navigate = useNavigate();
 
    const handleSourceCreated = async (sourceId: string) => {
@@ -56,54 +56,52 @@ export function Header({ actions }: HeaderProps) {
               </div>
             )}
 
-            <Show when="signed-in">
-              <div className="hidden md:flex items-center gap-2 mr-2">
-                <Link to="/analytics">
-                  <Button variant="ghost" size="sm" className="font-bold text-white/70 hover:text-primary hover:bg-primary/10 transition-all rounded-lg px-4">
-                    Analytics
-                  </Button>
-                </Link>
-                <Link to="/dashboards">
-                  <Button variant="ghost" size="sm" className="font-bold text-white/70 hover:text-accent hover:bg-accent/10 transition-all rounded-lg px-4">
-                    Dashboards
-                  </Button>
-                </Link>
-                <Link to="/blueprint">
-                  <Button variant="ghost" size="sm" className="font-bold text-white/70 hover:text-emerald-400 hover:bg-emerald-400/10 transition-all rounded-lg px-4">
-                    Blueprint
-                  </Button>
-                </Link>
-              </div>
-            </Show>
+            {isSignedIn && (
+              <>
+                <div className="hidden md:flex items-center gap-2 mr-2">
+                  <Link to="/analytics">
+                    <Button variant="ghost" size="sm" className="font-bold text-white/70 hover:text-primary hover:bg-primary/10 transition-all rounded-lg px-4">
+                      Analytics
+                    </Button>
+                  </Link>
+                  <Link to="/dashboards">
+                    <Button variant="ghost" size="sm" className="font-bold text-white/70 hover:text-accent hover:bg-accent/10 transition-all rounded-lg px-4">
+                      Dashboards
+                    </Button>
+                  </Link>
+                  <Link to="/blueprint">
+                    <Button variant="ghost" size="sm" className="font-bold text-white/70 hover:text-emerald-400 hover:bg-emerald-400/10 transition-all rounded-lg px-4">
+                      Blueprint
+                    </Button>
+                  </Link>
+                </div>
 
-            {/* Data Source Selector */}
-            <Show when="signed-in">
-              <DataSourceSelector
-                onUploadClick={() => setUploadDialogOpen(true)}
-                onConnectClick={() => setConnectDialogOpen(true)}
-              />
-            </Show>
+                <DataSourceSelector
+                  onUploadClick={() => setUploadDialogOpen(true)}
+                  onConnectClick={() => setConnectDialogOpen(true)}
+                />
+              </>
+            )}
 
             <div className="flex items-center gap-3">
-              <Show when="signed-in">
+              {isSignedIn ? (
                 <div className="pl-2 border-l border-white/10">
-                  <UserButton 
-                    appearance={{
-                      elements: {
-                        userButtonAvatarBox: "h-9 w-9 border-2 border-primary/30 shadow-lg shadow-primary/10"
-                      }
-                    }}
-                  />
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={logout}
+                    className="font-bold text-white/70 hover:text-red-400 hover:bg-red-400/10 transition-all rounded-lg px-4"
+                  >
+                    Sign Out
+                  </Button>
                 </div>
-              </Show>
-              
-              <Show when="signed-out">
-                <SignInButton mode="modal">
+              ) : (
+                <Link to="/login">
                   <Button size="sm" className="rounded-full px-6 font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
                     Sign In
                   </Button>
-                </SignInButton>
-              </Show>
+                </Link>
+              )}
             </div>
           </nav>
         </div>

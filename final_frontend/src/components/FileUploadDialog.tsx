@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useAuth } from "@clerk/react";
+import { useAuth } from '@/context/AuthContext';
 import { dataSourcesAPI } from "@/lib/api";
 import { Upload, X, FileSpreadsheet, Loader2 } from "lucide-react";
 import {

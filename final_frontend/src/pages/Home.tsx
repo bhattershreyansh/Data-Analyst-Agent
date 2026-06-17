@@ -2,10 +2,12 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Sparkles, BarChart3, ShieldCheck, Zap, Database, Search, Layout, Activity, Cpu, Globe } from "lucide-react";
 import { Header } from "@/components/Header";
-import { SignInButton, Show } from "@clerk/react";
+
 import { Link } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
+  const { isSignedIn } = useAuth();
   return (
     <div className="flex flex-col min-h-screen overflow-hidden relative bg-background">
       {/* Atmospheric background glows */}
@@ -35,22 +37,22 @@ export default function Home() {
           </p>
 
           <div className="pt-4">
-            <Show when="signed-out">
-              <SignInButton mode="modal">
+            {!isSignedIn && (
+              <Link to="/login">
                 <Button size="lg" className="h-16 rounded-full px-10 text-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all hover:scale-105">
                   Start Your Journey
                   <Zap className="ml-2 h-5 w-5 fill-current" />
                 </Button>
-              </SignInButton>
-            </Show>
-            <Show when="signed-in">
+              </Link>
+            )}
+            {isSignedIn && (
               <Link to="/analytics">
                 <Button size="lg" className="h-16 rounded-full px-10 text-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all hover:scale-105">
                   Go to Analytics
                   <Zap className="ml-2 h-5 w-5 fill-current" />
                 </Button>
               </Link>
-            </Show>
+            )}
           </div>
         </motion.div>
 

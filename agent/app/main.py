@@ -1,4 +1,6 @@
 import logging
+
+logger = logging.getLogger(__name__)
 from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,8 +23,7 @@ from app.routers.data_sources import router as data_sources_router
 from app.routers.query import router as query_router
 from app.routers.diagnostics import router as diagnostics_router
 from app.routers.dashboards import router as dashboards_router
-
-logger = logging.getLogger(__name__)
+from app.routers.auth import router as auth_router
 
 app = FastAPI(
     title="Shopify Data Analyst Agent API",
@@ -40,6 +41,7 @@ app.add_middleware(
 )
 
 # Register routers
+app.include_router(auth_router)
 app.include_router(data_sources_router)
 app.include_router(query_router)
 app.include_router(diagnostics_router)
@@ -211,25 +213,13 @@ async def get_mode_status(
         
         # Make sure the engine is active in data_source_manager
         if active_source_id not in data_source_manager.sources:
-            s = db_sources[0]
-            if s.type == "file":
-                info = s.connection_info
-                file_path = info.get("file_path")
-                from sqlalchemy import create_engine
-                engine = create_engine(f"sqlite:///{file_path}")
-                inspector = inspect(engine)
-                tables = inspector.get_table_names()
-                data_source_manager.sources[active_source_id] = {
-                    "source_id": active_source_id,
-                    "name": s.name,
-                    "type": "file",
-                    "engine": engine,
-                    "tables": tables,
-                    "table_count": len(tables),
-                    "created_at": s.created_at.isoformat(),
-                    "status": "loaded",
-                    "is_demo": "demo-shopify-" in active_source_id
-                }
+            from app.routers.data_sources import restore_source
+            restored = restore_source(active_source_id, db_sources[0])
+            if not restored:
+                # If restoration failed (e.g. file missing), clear the stale active ID
+                logger.warning(f"Could not restore source {active_source_id} for user {user_id}")
+                active_sources[user_id] = None
+                active_source_id = None
 
     if not active_source_id:
         return {

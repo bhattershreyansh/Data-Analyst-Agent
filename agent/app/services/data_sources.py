@@ -68,6 +68,8 @@ class DataSourceManager:
             # Create connection string based on database type
             if db_type == "postgresql":
                 connection_string = f"postgresql://{username}:{password}@{host}:{port}/{database}"
+                if "neon.tech" in host.lower():
+                    connection_string += "?sslmode=require&connect_timeout=30"
             elif db_type == "mysql":
                 connection_string = f"mysql+mysqlconnector://{username}:{password}@{host}:{port}/{database}"
             elif db_type == "sqlserver":
@@ -76,10 +78,15 @@ class DataSourceManager:
                 raise ValueError(f"Unsupported database type: {db_type}")
             
             # Create SQLAlchemy engine with safety options
-            engine = create_engine(
-                connection_string, 
-                execution_options={"isolation_level": "AUTOCOMMIT"}
-            )
+            engine_kwargs = {"execution_options": {"isolation_level": "AUTOCOMMIT"}}
+            if db_type in ("postgresql", "mysql"):
+                engine_kwargs.update({
+                    "pool_pre_ping": True,
+                    "pool_recycle": 300,
+                    "pool_timeout": 60
+                })
+                
+            engine = create_engine(connection_string, **engine_kwargs)
             
             # Test connection by getting table names
             inspector = inspect(engine)

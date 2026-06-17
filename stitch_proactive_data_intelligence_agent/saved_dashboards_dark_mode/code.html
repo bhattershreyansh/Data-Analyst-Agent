@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Dashboards | Data Analyst Agent</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&amp;family=Jetbrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#2a3548",
+                        "surface-bright": "#2f3a4c",
+                        "on-primary-fixed-variant": "#004788",
+                        "surface-dim": "#081425",
+                        "secondary": "#bec6e0",
+                        "surface-container-low": "#111c2d",
+                        "on-tertiary": "#213145",
+                        "on-secondary": "#283044",
+                        "on-surface": "#d8e3fb",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "outline-variant": "#414753",
+                        "surface-container-lowest": "#040e1f",
+                        "outline": "#8a919f",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "inverse-primary": "#005eb2",
+                        "tertiary-container": "#8292aa",
+                        "surface-variant": "#2a3548",
+                        "primary": "#a7c8ff",
+                        "inverse-on-surface": "#263143",
+                        "on-primary-container": "#002a55",
+                        "error": "#ffb4ab",
+                        "surface": "#081425",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#dae2fd",
+                        "inverse-surface": "#d8e3fb",
+                        "on-tertiary-container": "#1a2b3e",
+                        "tertiary": "#b7c8e1",
+                        "background": "#081425",
+                        "on-primary": "#003061",
+                        "tertiary-fixed-dim": "#b7c8e1",
+                        "tertiary-fixed": "#d3e4fe",
+                        "error-container": "#93000a",
+                        "secondary-container": "#3f465c",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed-variant": "#38485d",
+                        "on-surface-variant": "#c0c6d5",
+                        "on-secondary-fixed": "#131b2e",
+                        "on-primary-fixed": "#001b3c",
+                        "primary-container": "#3291ff",
+                        "on-tertiary-fixed": "#0b1c30",
+                        "surface-tint": "#a7c8ff",
+                        "surface-container-high": "#1f2a3c",
+                        "on-secondary-container": "#adb4ce",
+                        "on-background": "#d8e3fb",
+                        "surface-container": "#152031",
+                        "primary-fixed": "#d5e3ff",
+                        "coral-alert": "#ff8a80",
+                        "emerald-health": "#10b981"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "stack-dense": "4px",
+                        "gutter": "16px",
+                        "container-padding": "24px",
+                        "stack-compact": "8px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Geist"],
+                        "display": ["Geist"],
+                        "body": ["Geist"],
+                        "label": ["Jetbrains Mono"],
+                        "data-mono": ["JetBrains Mono"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #081425;
+            color: #d8e3fb;
+            font-family: 'Geist', sans-serif;
+        }
+        .insight-card {
+            transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+        }
+        .insight-card:hover {
+            border-color: #a7c8ff;
+            transform: translateY(-2px);
+            background-color: #1f2a3c;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #081425;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a3548;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-background text-on-background">
+<!-- TopNavBar -->
+<header class="bg-surface border-b border-outline-variant fixed top-0 left-0 right-0 z-50 h-16 flex justify-between items-center px-gutter w-full mx-auto">
+<div class="flex items-center gap-gutter">
+<span class="font-headline font-bold text-primary tracking-tight text-lg">Data Analyst Agent</span>
+<nav class="hidden md:flex items-center gap-6 ml-8">
+<a class="font-body text-sm text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Home</a>
+<a class="font-body text-sm text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Analytics</a>
+<a class="font-body text-sm text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-80" href="#">Blueprint</a>
+<a class="font-body text-sm text-primary font-bold border-b-2 border-primary pb-1 transition-colors cursor-pointer active:opacity-80" href="#">Dashboards</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex items-center bg-surface-container-low px-3 py-1.5 rounded border border-outline-variant gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">database</span>
+<span class="font-data-mono text-[11px] uppercase tracking-wider">Data Source: Connected</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant ml-2">
+<img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvQaCVozKJGN0u0xX4VdT_V1dFWVicM0Sz_k17-vOjL_fHS4vMo4rz6AS8iVt3Bu0XPc1et_nonyfmsW0olFLa5pPoD9EGWhONddoVS0f5wpZbYyi48sMfXhpCtc9vd_tcj8ngDZG9-EDXVcLHmKd4qxc1SNV0P-UbW9JOj7bGQ49mrvl7lhL_Mn1qpCJ5Qhywrbvj75mNI8WZc83Rs_WXEl-odnQ6yLR7pniBtBE-TRfibe2xRQSwLDtnfibrjZOXiRSsnfVRu9I"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="mt-16 flex-1 flex flex-col p-container-padding max-w-[1600px] mx-auto w-full">
+<!-- Header Section -->
+<section class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+<div>
+<h1 class="font-display text-3xl font-bold text-on-surface mb-1">Pinned Insights</h1>
+<p class="font-body text-sm text-on-surface-variant">Real-time forensic monitoring of mission-critical data streams.</p>
+</div>
+<button class="flex items-center gap-2 bg-primary-container text-on-primary-container px-4 py-2 rounded font-bold hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span class="font-body text-sm">Create New Dashboard</span>
+</button>
+</section>
+<!-- Insights Grid (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter">
+<!-- Insight Card 1: Revenue (Wide) -->
+<div class="insight-card lg:col-span-2 bg-surface-container border border-outline-variant rounded-lg p-gutter flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="font-label text-[10px] text-primary uppercase block mb-1 tracking-widest font-bold">Performance Track</span>
+<h3 class="font-headline text-lg font-semibold text-on-surface">Weekly Revenue vs. Target</h3>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">more_vert</span>
+</div>
+<div class="h-48 w-full bg-surface-container-lowest rounded relative overflow-hidden flex items-end px-4 gap-1">
+<!-- Forensic Bar Chart -->
+<div class="flex-1 bg-primary/10 h-[40%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-[55%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/10 h-[45%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/30 h-[70%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-[85%] rounded-t-sm border-t-2 border-primary-container"></div>
+<div class="flex-1 bg-primary/20 h-[60%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-[95%] rounded-t-sm border-t-2 border-primary-container"></div>
+<div class="absolute inset-0 flex flex-col justify-between p-2 pointer-events-none opacity-10">
+<div class="border-t border-dashed border-outline w-full"></div>
+<div class="border-t border-dashed border-outline w-full"></div>
+<div class="border-t border-dashed border-outline w-full"></div>
+</div>
+</div>
+</div>
+<div class="mt-6 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">schedule</span>
+<span class="font-data-mono text-[11px] text-on-surface-variant uppercase">Updated: 4m ago</span>
+</div>
+<a class="font-label text-[11px] text-primary hover:underline flex items-center gap-1 font-bold tracking-wider" href="#">
+                        INVESTIGATE <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Insight Card 2: Refunds (Coral Alert) -->
+<div class="insight-card bg-surface-container border border-outline-variant rounded-lg p-gutter flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="font-label text-[10px] text-coral-alert uppercase block mb-1 tracking-widest font-bold">Anomaly Alert</span>
+<h3 class="font-headline text-lg font-semibold text-on-surface">Top 10 Refunded SKUs</h3>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-coral-alert"></div>
+<div class="flex-1 h-2 bg-surface-container-lowest rounded overflow-hidden">
+<div class="bg-coral-alert w-[85%] h-full"></div>
+</div>
+<span class="font-data-mono text-[11px] font-bold text-on-surface">85%</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-coral-alert/60"></div>
+<div class="flex-1 h-2 bg-surface-container-lowest rounded overflow-hidden">
+<div class="bg-coral-alert/60 w-[62%] h-full"></div>
+</div>
+<span class="font-data-mono text-[11px] text-on-surface">62%</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-coral-alert/40"></div>
+<div class="flex-1 h-2 bg-surface-container-lowest rounded overflow-hidden">
+<div class="bg-coral-alert/40 w-[41%] h-full"></div>
+</div>
+<span class="font-data-mono text-[11px] text-on-surface-variant">41%</span>
+</div>
+</div>
+</div>
+<div class="mt-6 flex justify-between items-center">
+<span class="font-data-mono text-[11px] text-on-surface-variant uppercase">Updated: 12m ago</span>
+<a class="font-label text-[11px] text-primary hover:underline font-bold tracking-wider" href="#">INVESTIGATE</a>
+</div>
+</div>
+<!-- Insight Card 3: User Cohorts -->
+<div class="insight-card bg-surface-container border border-outline-variant rounded-lg p-gutter flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="font-label text-[10px] text-on-surface-variant uppercase block mb-1 tracking-widest font-bold">Demographics</span>
+<h3 class="font-headline text-lg font-semibold text-on-surface">User Cohorts</h3>
+</div>
+</div>
+<div class="flex justify-center py-2">
+<div class="relative w-32 h-32 rounded-full border-8 border-primary-container" style="border-right-color: transparent; border-bottom-color: #2a3548; transform: rotate(45deg);">
+<div class="absolute inset-0 flex items-center justify-center -rotate-45">
+<span class="font-data-mono text-lg font-bold text-primary">72%</span>
+</div>
+</div>
+</div>
+<div class="mt-4 flex flex-wrap gap-2">
+<span class="px-2 py-0.5 rounded-sm bg-primary/20 text-primary text-[10px] font-bold">ENTERPRISE</span>
+<span class="px-2 py-0.5 rounded-sm bg-surface-container-highest text-on-surface-variant text-[10px] font-bold">SMB</span>
+</div>
+</div>
+<div class="mt-6 flex justify-between items-center">
+<span class="font-data-mono text-[11px] text-on-surface-variant uppercase">Updated: 1h ago</span>
+<a class="font-label text-[11px] text-primary hover:underline font-bold tracking-wider" href="#">INVESTIGATE</a>
+</div>
+</div>
+<!-- Insight Card 4: Churn Forecast -->
+<div class="insight-card bg-surface-container border border-outline-variant rounded-lg p-gutter flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="font-label text-[10px] text-emerald-health uppercase block mb-1 tracking-widest font-bold">Forensic Analysis</span>
+<h3 class="font-headline text-lg font-semibold text-on-surface">Churn Forecast</h3>
+</div>
+</div>
+<div class="h-32 w-full flex items-center justify-center">
+<div class="text-center">
+<span class="block text-5xl font-bold text-primary leading-none">-12.4%</span>
+<span class="font-label text-[11px] text-on-surface-variant uppercase tracking-widest mt-2 block">Projected Improvement</span>
+</div>
+</div>
+</div>
+<div class="mt-6 flex justify-between items-center">
+<span class="font-data-mono text-[11px] text-on-surface-variant uppercase">Updated: 2h ago</span>
+<a class="font-label text-[11px] text-primary hover:underline font-bold tracking-wider" href="#">INVESTIGATE</a>
+</div>
+</div>
+<!-- Insight Card 5: Inventory Flow (Emerald Health) -->
+<div class="insight-card lg:col-span-2 bg-surface-container border border-outline-variant rounded-lg p-gutter flex flex-col justify-between">
+<div class="flex gap-gutter h-full">
+<div class="flex-1 flex flex-col justify-between">
+<div>
+<span class="font-label text-[10px] text-emerald-health uppercase block mb-1 tracking-widest font-bold">Operational Health</span>
+<h3 class="font-headline text-lg font-semibold text-on-surface">Inventory Flow Rate</h3>
+<p class="font-body text-xs text-on-surface-variant mt-2 leading-relaxed">Monitoring velocity of top 50 fulfillment centers across EMEA region.</p>
+</div>
+<div class="mt-4 flex justify-between items-center">
+<span class="font-data-mono text-[11px] text-on-surface-variant uppercase">Updated: 45m ago</span>
+<a class="font-label text-[11px] text-primary hover:underline font-bold tracking-wider" href="#">INVESTIGATE</a>
+</div>
+</div>
+<div class="w-1/3 bg-surface-container-lowest rounded p-4 flex flex-col justify-center border border-outline-variant/10">
+<div class="mb-4">
+<span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">CURRENT LOAD</span>
+<div class="text-3xl font-bold text-emerald-health mt-1">88.2%</div>
+</div>
+<div class="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
+<div class="bg-emerald-health h-full w-[88%] shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Insight Card 6: Error Rate (Critical Coral) -->
+<div class="insight-card bg-surface-container border border-outline-variant rounded-lg p-gutter flex flex-col justify-between border-l-4 border-l-coral-alert">
+<div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="font-label text-[10px] text-coral-alert uppercase block mb-1 tracking-widest font-bold">Critical Metric</span>
+<h3 class="font-headline text-lg font-semibold text-on-surface">API Error Rate</h3>
+</div>
+<span class="material-symbols-outlined text-coral-alert" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div class="bg-coral-alert/5 border border-coral-alert/20 p-3 rounded flex items-center gap-4">
+<div class="text-coral-alert font-data-mono text-xl font-bold">2.4%</div>
+<div class="text-on-surface-variant text-[11px] leading-tight font-medium">Spike detected in <code class="text-coral-alert opacity-80">US-EAST-1</code> cluster.</div>
+</div>
+</div>
+<div class="mt-6 flex justify-between items-center">
+<span class="font-data-mono text-[11px] text-on-surface-variant uppercase">Updated: 1m ago</span>
+<a class="font-label text-[11px] text-primary hover:underline font-bold tracking-wider" href="#">INVESTIGATE</a>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-dim border-t border-outline-variant h-12 flex justify-between items-center px-gutter w-full mt-auto">
+<div class="flex items-center gap-gutter">
+<span class="font-label text-[10px] text-outline uppercase tracking-[0.2em] font-bold">v2.4.1-stable</span>
+<div class="hidden sm:flex gap-6">
+<a class="font-data-mono text-[11px] text-outline hover:text-on-surface transition-colors underline-offset-4 hover:underline uppercase" href="#">Platform Status</a>
+<a class="font-data-mono text-[11px] text-outline hover:text-on-surface transition-colors underline-offset-4 hover:underline uppercase" href="#">API Docs</a>
+<a class="font-data-mono text-[11px] text-outline hover:text-on-surface transition-colors underline-offset-4 hover:underline uppercase" href="#">Privacy</a>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="w-2 h-2 rounded-full bg-emerald-health animate-pulse"></span>
+<span class="font-data-mono text-[11px] text-on-surface-variant uppercase font-bold tracking-widest">Systems Nominal</span>
+</div>
+</footer>
+<script>
+        // Micro-interactions for dashboard cards
+        document.querySelectorAll('.insight-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                // Future expansion: trigger subtle data refresh animation
+            });
+        });
+    </script>
+</body></html>

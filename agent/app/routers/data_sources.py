@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, security_manager
 from app.models.db_models import User, DataSource as DBDataSource
 from app.schemas.api_schemas import DataSourceResponse, DatabaseConnectionRequest, AnomalyScanResponse
 from app.services.data_sources import data_source_manager, active_sources
@@ -28,6 +28,42 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/data-sources", tags=["data-sources"])
 
 DEMO_SOURCE_ID = settings.DEMO_SOURCE_ID
+
+def restore_source(source_id: str, db_source: DBDataSource):
+    """Attempt to restore a data source into memory from DB metadata"""
+    try:
+        if db_source.type == "database":
+            conn = db_source.connection_info
+            pwd = security_manager.decrypt(conn.get("encrypted_password"))
+            data_source_manager.add_database(
+                name=db_source.name,
+                db_type=db_source.db_type,
+                host=conn.get("host"),
+                port=conn.get("port"),
+                username=conn.get("username"),
+                password=pwd,
+                database=conn.get("database"),
+                source_id=source_id
+            )
+        elif db_source.type == "file":
+            conn = db_source.connection_info
+            file_path = conn.get("file_path")
+            file_type = conn.get("file_type")
+            if os.path.exists(file_path):
+                data_source_manager.add_file(
+                    name=db_source.name,
+                    file_path=file_path,
+                    file_type=file_type,
+                    source_id=source_id
+                )
+            else:
+                logger.error(f"Cannot restore source {source_id}: file {file_path} missing")
+                return None
+        return data_source_manager.get_source(source_id)
+    except Exception as e:
+        logger.error(f"Failed to restore source {source_id}: {e}")
+        return None
+
 
 def sync_user(db: Session, user_id: str):
     """Ensure user exists in metadata DB"""
@@ -178,9 +214,27 @@ async def list_data_sources(
 
 
 @router.get("/{source_id}")
-async def get_data_source(source_id: str):
+async def get_data_source(
+    source_id: str,
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Get details of a specific data source"""
+    user_id = user["user_id"]
+    db_source = None
+    if source_id != DEMO_SOURCE_ID and source_id != f"demo-shopify-{user_id}":
+        db_source = db.query(DBDataSource).filter(
+            DBDataSource.source_id == source_id,
+            DBDataSource.user_id == user_id
+        ).first()
+        
+        if not db_source:
+            raise HTTPException(status_code=403, detail="Not authorized to access this data source")
+            
     source = data_source_manager.get_source(source_id)
+    if not source and db_source:
+        source = restore_source(source_id, db_source)
+        
     if not source:
         raise HTTPException(status_code=404, detail=f"Data source {source_id} not found")
     
@@ -206,6 +260,7 @@ async def get_data_source_schema(
     user_id = user["user_id"]
     
     # Verify ownership
+    db_source = None
     if source_id != DEMO_SOURCE_ID and source_id != f"demo-shopify-{user_id}":
         db_source = db.query(DBDataSource).filter(
             DBDataSource.source_id == source_id,
@@ -216,6 +271,9 @@ async def get_data_source_schema(
             raise HTTPException(status_code=403, detail="Not authorized to access this schema")
             
     source = data_source_manager.get_source(source_id)
+    if not source and db_source:
+        source = restore_source(source_id, db_source)
+        
     if not source:
         raise HTTPException(status_code=404, detail=f"Data source {source_id} not found")
         
@@ -249,12 +307,34 @@ async def clear_schema_cache(source_id: str, user: dict = Depends(get_current_us
 
 
 @router.delete("/{source_id}")
-async def remove_data_source(source_id: str):
-    """Delete a data source"""
-    success = data_source_manager.remove_source(source_id)
-    if not success:
-        raise HTTPException(status_code=404, detail=f"Data source {source_id} not found")
-    
+async def remove_data_source(
+    source_id: str,
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a data source (auth required, ownership enforced)"""
+    user_id = user["user_id"]
+
+    # Verify ownership before deleting
+    db_source = db.query(DBDataSource).filter(
+        DBDataSource.source_id == source_id,
+        DBDataSource.user_id == user_id
+    ).first()
+    if not db_source:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this data source")
+
+    # Remove from runtime manager
+    data_source_manager.remove_source(source_id)
+
+    # Remove from persistent DB
+    db.delete(db_source)
+    db.commit()
+
+    # Clear from active sources if it was active
+    from app.services.data_sources import active_sources
+    if active_sources.get(user_id) == source_id:
+        active_sources[user_id] = None
+
     return JSONResponse(
         content={"message": f"Data source removed successfully"},
         status_code=200
@@ -271,6 +351,7 @@ async def set_active_source(
     user_id = user["user_id"]
     
     # Verify source belongs to user (or is demo)
+    db_source = None
     if source_id != DEMO_SOURCE_ID and source_id != f"demo-shopify-{user_id}":
         db_source = db.query(DBDataSource).filter(
             DBDataSource.source_id == source_id,
@@ -281,6 +362,9 @@ async def set_active_source(
             raise HTTPException(status_code=403, detail="Not authorized to access this data source")
     
     source = data_source_manager.get_source(source_id)
+    if not source and db_source:
+        source = restore_source(source_id, db_source)
+        
     if not source:
         raise HTTPException(status_code=404, detail=f"Data source {source_id} not found")
     
@@ -323,6 +407,7 @@ async def get_smart_questions(
     """Generate smart, business-relevant questions for a data source"""
     user_id = user["user_id"]
     
+    db_source = None
     if source_id != DEMO_SOURCE_ID and source_id != f"demo-shopify-{user_id}":
         db_source = db.query(DBDataSource).filter(
             DBDataSource.source_id == source_id,
@@ -350,6 +435,9 @@ async def get_smart_questions(
 
         # Get the data source
         source = data_source_manager.get_source(source_id)
+        if not source and db_source:
+            source = restore_source(source_id, db_source)
+            
         if not source:
             raise HTTPException(status_code=404, detail=f"Data source {source_id} not found")
         
@@ -403,6 +491,7 @@ async def scan_source_anomalies(
     user_id = user["user_id"]
     
     # Check permissions if not demo
+    db_source = None
     if source_id != DEMO_SOURCE_ID and source_id != f"demo-shopify-{user_id}":
         db_source = db.query(DBDataSource).filter(
             DBDataSource.source_id == source_id,
@@ -414,6 +503,9 @@ async def scan_source_anomalies(
             
     # Get active source metadata
     source = data_source_manager.get_source(source_id)
+    if not source and db_source:
+        source = restore_source(source_id, db_source)
+        
     if not source:
         raise HTTPException(status_code=404, detail=f"Data source {source_id} not found")
         

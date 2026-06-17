@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth, useUser } from '@clerk/react';
+import { useAuth, useUser } from '@/context/AuthContext';
 import { queryAPI, SavedChart } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

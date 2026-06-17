@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth, useUser } from '@clerk/react';
+import { useAuth, useUser } from '@/context/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatInterface, Message } from '@/components/ChatInterface';
 import { AnomalyAlertCenter } from '@/components/AnomalyAlertCenter';
@@ -19,7 +19,7 @@ import { Header } from '@/components/Header';
 export default function Analytics() {
   const { getToken } = useAuth();
   const { user } = useUser();
-  const userId = user?.id;
+  const userId = user?.user_id;
   const [queryMessages, setQueryMessages] = useState<Message[]>([]);
   const [diagnosticsMessages, setDiagnosticsMessages] = useState<Message[]>([]);
   const [chatMode, setChatMode] = useState<'query' | 'diagnose'>('query');

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { queryAPI } from '@/lib/api';
-import { useAuth, useUser } from '@clerk/react';
+import { useAuth, useUser } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Database, 

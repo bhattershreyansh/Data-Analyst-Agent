@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Data Analyst Agent | Data Connections</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=JetBrains+Mono:wght@100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "surface-container-highest": "#2a3548",
+                "surface-bright": "#2f3a4c",
+                "on-primary-fixed-variant": "#004788",
+                "surface-dim": "#081425",
+                "secondary": "#bec6e0",
+                "surface-container-low": "#111c2d",
+                "on-tertiary": "#213145",
+                "on-secondary": "#283044",
+                "on-surface": "#d8e3fb",
+                "secondary-fixed-dim": "#bec6e0",
+                "outline-variant": "#414753",
+                "surface-container-lowest": "#040e1f",
+                "outline": "#8a919f",
+                "on-secondary-fixed-variant": "#3f465c",
+                "primary-fixed-dim": "#a7c8ff",
+                "inverse-primary": "#005eb2",
+                "tertiary-container": "#8292aa",
+                "surface-variant": "#2a3548",
+                "primary": "#a7c8ff",
+                "inverse-on-surface": "#263143",
+                "on-primary-container": "#002a55",
+                "error": "#ffb4ab",
+                "surface": "#081425",
+                "on-error-container": "#ffdad6",
+                "secondary-fixed": "#dae2fd",
+                "inverse-surface": "#d8e3fb",
+                "on-tertiary-container": "#1a2b3e",
+                "tertiary": "#b7c8e1",
+                "background": "#081425",
+                "on-primary": "#003061",
+                "tertiary-fixed-dim": "#b7c8e1",
+                "tertiary-fixed": "#d3e4fe",
+                "error-container": "#93000a",
+                "secondary-container": "#3f465c",
+                "on-error": "#690005",
+                "on-tertiary-fixed-variant": "#38485d",
+                "on-surface-variant": "#c0c6d5",
+                "on-secondary-fixed": "#131b2e",
+                "on-primary-fixed": "#001b3c",
+                "primary-container": "#3291ff",
+                "on-tertiary-fixed": "#0b1c30",
+                "surface-tint": "#a7c8ff",
+                "surface-container-high": "#1f2a3c",
+                "on-secondary-container": "#adb4ce",
+                "on-background": "#d8e3fb",
+                "surface-container": "#152031",
+                "primary-fixed": "#d5e3ff"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "unit": "4px",
+                "stack-dense": "4px",
+                "gutter": "16px",
+                "container-padding": "24px",
+                "stack-compact": "8px"
+            },
+            "fontFamily": {
+                "headline": ["Geist"],
+                "display": ["Geist"],
+                "body": ["Geist"],
+                "label": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                "body-base": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                "body-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                "data-mono": ["12px", {"lineHeight": "1.2", "fontWeight": "500"}],
+                "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                "headline-sm": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                "label-caps": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #081425;
+            color: #d8e3fb;
+            -webkit-font-smoothing: antialiased;
+            font-family: 'Geist', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(17, 28, 45, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid #414753;
+        }
+        .pulse-emerald {
+            animation: pulse-emerald 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-emerald {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .5; transform: scale(1.1); }
+        }
+        .drag-active {
+            border-color: #a7c8ff !important;
+            background: rgba(167, 200, 255, 0.05) !important;
+        }
+    </style>
+</head>
+<body class="font-body-base text-on-background overflow-x-hidden min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface border-b border-outline-variant fixed top-0 full-width z-50 flex justify-between items-center w-full px-gutter h-16 max-w-full mx-auto">
+<div class="flex items-center gap-gutter">
+<span class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight">Data Analyst Agent</span>
+<nav class="hidden md:flex gap-gutter items-center ml-gutter">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-body-base text-body-base cursor-pointer active:opacity-80" href="#">Home</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body-base text-body-base cursor-pointer active:opacity-80" href="#">Analytics</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body-base text-body-base cursor-pointer active:opacity-80" href="#">Blueprint</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body-base text-body-base cursor-pointer active:opacity-80" href="#">Dashboards</a>
+</nav>
+</div>
+<div class="flex items-center gap-gutter">
+<div class="hidden lg:flex items-center bg-surface-container-high px-stack-compact py-1 rounded-full gap-2 border border-outline-variant">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">sensors</span>
+<span class="text-on-surface-variant text-[11px] font-label-caps uppercase tracking-widest">Data Source: Connected</span>
+</div>
+<div class="flex items-center gap-stack-compact">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant ml-2">
+<img class="w-full h-full object-cover" data-alt="A professional high-resolution profile headshot of a data analyst in a modern office environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfX_VuH8H_pNNsAnF4ycTwTpc6A4xYl2VUcFyYbcWCrMRndvNjgOOBVmx381AfOAl5sV4YxIRORZORPpOJ9Hvi9yGK6GHfs0xHSMvjOHRNtu0K9tC7fAvbfFn9XouTGaqT6-UZ3Tl7Ws65VO7-E6JF9O5UE2fEYz1E1myxfg7CMrEvsqZLx-yKA_0fPVW-fgc2IsBv2Md4bMRnV81HkwDH_VKVEkWvF26Oj57jY9t6aE4WMjlMXEkTdaKlsrvF-3kgkZeYXSHOD_k"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 mt-16 pb-24 relative">
+<div class="max-w-6xl mx-auto px-container-padding pt-16">
+<!-- Hero Section -->
+<div class="text-center mb-16">
+<span class="font-label-caps text-label-caps text-primary tracking-[0.2em] uppercase mb-4 block">Intelligence Onboarding</span>
+<h1 class="font-display-lg text-display-lg text-on-surface mb-4">Connect Your Intelligence Source</h1>
+<p class="text-on-surface-variant max-w-2xl mx-auto font-body-base text-body-base">
+                    Initialize your forensic analysis by bridging your primary data pipelines. Secure, read-only access for rapid pattern recognition and anomaly detection.
+                </p>
+</div>
+<!-- Primary Connection Options -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+<!-- Upload Data Card -->
+<div class="glass-panel p-gutter rounded-xl flex flex-col items-center justify-center min-h-[360px] border-dashed border-2 border-outline-variant hover:border-primary/50 transition-all group" id="drop-zone">
+<div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-6 group-hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">upload_file</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Upload Data</h3>
+<p class="text-on-surface-variant text-center mb-8 max-w-xs font-body-sm text-body-sm">
+                        Ingest static intelligence reports or exported tables. Supports CSV, Excel, and JSON.
+                    </p>
+<div class="flex flex-col items-center w-full max-w-[280px] gap-stack-compact">
+<button class="w-full py-3 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 transition-opacity active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                            Select Files
+                        </button>
+<span class="font-label-caps text-[10px] text-outline mt-2">Maximum file size: 500MB</span>
+</div>
+</div>
+<!-- Connect Database Card -->
+<div class="glass-panel p-gutter rounded-xl flex flex-col min-h-[360px]">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-10 h-10 rounded bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">database</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Connect Database</h3>
+<p class="font-label-caps text-outline text-[10px] uppercase">Real-time Pipeline</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-stack-compact flex-1">
+<!-- Integration Card: PostgreSQL -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-stack-compact flex items-center gap-3 hover:bg-surface-container-highest transition-all cursor-pointer group active:scale-95">
+<div class="w-10 h-10 bg-surface-container-highest rounded flex items-center justify-center overflow-hidden">
+<img class="w-6 h-6 grayscale group-hover:grayscale-0 transition-all" data-alt="PostgreSQL logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7N61u-6a631b7-q0IqpSsAqh2af7uO79I5KPoa1r57OoWtZ37vkow4fEiqfumNwEVS73MpNHAXMPpEQp0U__fDNdYQLMwxGBdy3w00clDfPOn6Gc92nhWxSnen_CSD7Cl22RG1NCaelZ6dpEraepkk-D8PrYlQIKW0wRtIIarZAfRbimFIjHwTi6KzhzaE3Acr3muWyZhX6qKGcHi0SC8TCVR09cFOrHtj8iYhRFRMzWp_QUlX66z0bBBG_pFp4BuI_onAHTQ7gM"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-primary transition-colors">PostgreSQL</span>
+</div>
+<!-- Integration Card: MySQL -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-stack-compact flex items-center gap-3 hover:bg-surface-container-highest transition-all cursor-pointer group active:scale-95">
+<div class="w-10 h-10 bg-surface-container-highest rounded flex items-center justify-center">
+<img class="w-6 h-6 grayscale group-hover:grayscale-0 transition-all" data-alt="MySQL logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPesTA035uPsliNXMCYxwIDtma4m2GBxl43gv-aYRzfJQfnDvMfSYRJopGug2i8AwP7hfR_LtcjrTEsNDiCJGaDmPfJghuspzhjWZFFjpTMSMLAgMlvz1GyPeki87KZ2YwEU2hkve5Dbwky_nHhd_d_VkSP2CHZOCi4R0di-ndT1jGONPqm6UWQVdKTgwLJqbKXE9YXtLaFwF_3nKHR-gBeDzhnEX79yr5-4GtxslPD3FUoQriVCEMa7QbrW2uWBmmc8PEzoRZ_8k"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-primary transition-colors">MySQL</span>
+</div>
+<!-- Integration Card: SQL Server -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-stack-compact flex items-center gap-3 hover:bg-surface-container-highest transition-all cursor-pointer group active:scale-95">
+<div class="w-10 h-10 bg-surface-container-highest rounded flex items-center justify-center">
+<img class="w-6 h-6 grayscale group-hover:grayscale-0 transition-all" data-alt="SQL Server logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8wdSZhLpq48ifPpi1D9AjEqtDBjidJxBfiRR1Ji5iY_hQJIFI18Zh17IkldmuSPsup2QLH5SvJ72NESbxOQYbb4sdmOgx3fZJrQk8qe6lvXcucb0w0vRRvYh77pcMfi7qPZtZEcFlOgoLfvEo4Ev-3xcPYZxr2ZhJGpoUth9YqSipMsB1AY4qKA47TpN-iso_iZWOCDaipWEyVbkH-bAhjm9wUbvgCAxWx7hjJWKI6cExfrT9GTThQNn9ZD8vPV-h9HYCNjqa5PY"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-primary transition-colors">SQL Server</span>
+</div>
+<!-- Integration Card: Snowflake -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-stack-compact flex items-center gap-3 hover:bg-surface-container-highest transition-all cursor-pointer group active:scale-95">
+<div class="w-10 h-10 bg-surface-container-highest rounded flex items-center justify-center">
+<img class="w-6 h-6 grayscale group-hover:grayscale-0 transition-all" data-alt="Snowflake logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCryeH6ANW2xb2JcfG9nWx2AkFlTNBLctN7KR3MffZkFJ5fkvPel-Qon_W0yyhU15adJc0yujMqpj0TMzDcC93pQ8MuByHAKRwc89QTK3uBLoPk3uGu9GemH8kZwb9Lw5o2XssFeEUrrRuo5OffZnusRNO5f-lF50uLeGc5h29LN9rdHN1PVpEqmFU2cTt0J7KcLOYIbYFWitzjjjM1UG-awkPHqo1og0w_2bnP3N-dTbz3PDne2heD_wHasz9drXSZ-3JctHEcRE"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-primary transition-colors">Snowflake</span>
+</div>
+<!-- Integration Card: BigQuery -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-stack-compact flex items-center gap-3 hover:bg-surface-container-highest transition-all cursor-pointer group active:scale-95">
+<div class="w-10 h-10 bg-surface-container-highest rounded flex items-center justify-center">
+<img class="w-6 h-6 grayscale group-hover:grayscale-0 transition-all" data-alt="BigQuery logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4i8vKzIJqaIfiFDzYHzuNLl8YPHS5dQoIjKOuD9JAmFblsBZEPoCc-9CPiWU8AmazX5hJ0PhgUpwmY7m6O0UIM8Pw8NXFcAbdLeqMYMMOAGPFAPQXxIUK0L93dJ9zP5zGSL8Kz6giTahvZxKGdO1I6vFnARkpEO_VqIQn__ZThTcSu5vtxmz_c1XCeqI5UTpTJibpQOaWh6h_9oA9pIAXpWr-sYT3MztMHamTklzBfLCp6aoFbv4ECWx_VjW-jZBEGgxA4TeDQfw"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-primary transition-colors">BigQuery</span>
+</div>
+<!-- Integration Card: More -->
+<div class="bg-surface-container-low border border-outline-variant border-dashed rounded-lg p-stack-compact flex items-center gap-3 hover:bg-surface-container-highest transition-all cursor-pointer group active:scale-95">
+<div class="w-10 h-10 bg-surface-container-highest rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">more_horiz</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline group-hover:text-primary transition-colors">View All (12+)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Active Data Sources Section -->
+<section>
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+                        Active Data Sources
+                        <span class="bg-primary/20 text-primary text-[10px] font-label-caps px-2 py-0.5 rounded-full">3 Verified</span>
+</h2>
+<button class="text-on-surface-variant hover:text-primary font-label-caps text-[11px] flex items-center gap-1 transition-all">
+                        Refresh Status <span class="material-symbols-outlined text-[14px]">refresh</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Source Card 1 -->
+<div class="glass-panel p-4 rounded-xl flex items-start gap-4 hover:bg-surface-container-high transition-all">
+<div class="p-3 bg-surface-container-highest rounded-lg relative">
+<img class="w-6 h-6 opacity-80" data-alt="E-commerce DB icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBG0gYKRmx8lF5e9DdsPPZ4K2Crjc-Q-8O0DbbxldjQvTqLpo468ZULwiAl3krCicHT3vFIobtbAhpmD-CTERjdQLgu8F4ky8vQIOhOjHA3dScijR1ORRKcQb-_OTKZkEq1lh9_2uSyapUz83qW6gdhRSGkCG_hMNtKpIdJaHnwKxk4Ct6jV9xizKJ9zf1nO4bLw3DlHuzFzm0JBLXv8leP89VAjXpqkvDjyctLOql7oLQ9mLSXB0js68j2ZnGQ9kA5_1mMwvw6P-8"/>
+<div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-surface pulse-emerald"></div>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<span class="font-body-base font-bold text-on-surface">E-commerce Master DB</span>
+<span class="material-symbols-outlined text-outline text-[16px] cursor-pointer hover:text-primary">more_vert</span>
+</div>
+<p class="font-data-mono text-[11px] text-outline mb-3">AWS-RDS | prod-01-replica</p>
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-[10px] text-emerald-400">Connected</span>
+<span class="font-label-caps text-[10px] text-outline">Last sync: 2m ago</span>
+</div>
+</div>
+</div>
+<!-- Source Card 2 -->
+<div class="glass-panel p-4 rounded-xl flex items-start gap-4 hover:bg-surface-container-high transition-all">
+<div class="p-3 bg-surface-container-highest rounded-lg relative">
+<img class="w-6 h-6 opacity-80" data-alt="Marketing Feed icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCytElA9PUxcwNoenvOUCEHtxeKwDYLu1mao6VqG_v7y6c17x88ClB5C0HHZkbO5uDfh4FhNuj1I3k0qnrmY1n4mWEuN5sNHWpOjm3QGJoQXa3XK5mxdY-OsELcQPuNUw4od9jw1TX_WtV2gsbh3JQOgwNWN1wJwL9IHt0uedOHs6h6FsZwyvDMbRyfbqcPsYaFefp6DEs6xLBHLqX2lhuZwLQS_5XjdnN6oaLFtGpmCK9kzOsor6bpR_mVGy_pEIZ0gp3JZ3CmIhw"/>
+<div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-surface pulse-emerald"></div>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<span class="font-body-base font-bold text-on-surface">Marketing Feed 2024</span>
+<span class="material-symbols-outlined text-outline text-[16px] cursor-pointer hover:text-primary">more_vert</span>
+</div>
+<p class="font-data-mono text-[11px] text-outline mb-3">Local | ads_performance.csv</p>
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-[10px] text-emerald-400">Connected</span>
+<span class="font-label-caps text-[10px] text-outline">Size: 42.8 MB</span>
+</div>
+</div>
+</div>
+<!-- Source Card 3 -->
+<div class="glass-panel p-4 rounded-xl flex items-start gap-4 hover:bg-surface-container-high transition-all border-l-4 border-l-amber-500">
+<div class="p-3 bg-surface-container-highest rounded-lg relative">
+<img class="w-6 h-6 opacity-80" data-alt="CRM icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmO-gQrvHhhHKQn8sp316ybhmgwQLMuUEMz30v_GiJC2ut-jzGZ2Z1ewUFj6YMxyCdGcfDw1J6O-Kmk8o1_k5oOazgRIAvmGv6UzR4CVKkdjSDk8jR_IOzFhslSRapzvyZxAmVdG7R42sEEU408b5qYoIPow7LUCOThYZQLhSjSSG2ladK00hCf8g01H4A92fhmnW2QHaj2gra4g3wKVmActRWBhtMSLbrbUsp9xHJgzEMgqCl1ZfTcayJMC_gDjVibauyDUJqtco"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<span class="font-body-base font-bold text-on-surface">Salesforce CRM</span>
+<span class="material-symbols-outlined text-outline text-[16px] cursor-pointer hover:text-primary">more_vert</span>
+</div>
+<p class="font-data-mono text-[11px] text-outline mb-3">API | oauth-production</p>
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-[10px] text-amber-500">Auth Expired</span>
+<button class="font-label-caps text-[10px] text-primary hover:underline">Re-authenticate</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-dim border-t border-outline-variant flex justify-between items-center px-gutter py-unit w-full fixed bottom-0 z-50">
+<div class="flex items-center gap-gutter">
+<span class="font-label-caps text-label-caps text-outline">v2.4.1-stable</span>
+<div class="h-4 w-[1px] bg-outline-variant"></div>
+<div class="flex gap-4">
+<a class="font-data-mono text-data-mono text-outline hover:text-on-surface transition-colors underline-offset-4 hover:underline" href="#">Platform Status</a>
+<a class="font-data-mono text-data-mono text-outline hover:text-on-surface transition-colors underline-offset-4 hover:underline" href="#">API Docs</a>
+<a class="font-data-mono text-data-mono text-outline hover:text-on-surface transition-colors underline-offset-4 hover:underline" href="#">Privacy</a>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+<span class="font-data-mono text-data-mono text-on-surface-variant uppercase">Core Engine: Operational</span>
+</div>
+</footer>
+<script>
+        const dropZone = document.getElementById('drop-zone');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('drag-active');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('drag-active');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            alert('Ingesting: ' + files[0].name + ' into the intelligence pipeline.');
+        });
+    </script>
+</body></html>

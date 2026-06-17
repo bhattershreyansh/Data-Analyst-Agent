@@ -10,6 +10,7 @@ class User(Base):
     
     user_id = Column(String(255), primary_key=True)
     email = Column(String(255), nullable=True)
+    hashed_password = Column(String(255), nullable=True)  # Added for custom JWT auth
     created_at = Column(DateTime, default=datetime.now)
     
     charts = relationship("SavedChart", back_populates="user")

@@ -80,89 +80,56 @@ class SecurityManager:
 security_manager = SecurityManager()
 
 
-# ─── CLERK AUTHENTICATION ─────────────────────────────────────────────
+import bcrypt
+from datetime import datetime, timedelta
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        plain_bytes = plain_password.encode('utf-8')
+        if len(plain_bytes) > 72:
+            plain_bytes = plain_bytes[:72]
+        hashed_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(plain_bytes, hashed_bytes)
+    except Exception as e:
+        logger.error(f"Password verification error: {e}")
+        return False
+
+def get_password_hash(password: str) -> str:
+    plain_bytes = password.encode('utf-8')
+    if len(plain_bytes) > 72:
+        plain_bytes = plain_bytes[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(plain_bytes, salt).decode('utf-8')
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return encoded_jwt
 
 security = HTTPBearer(auto_error=False)
 
-class ClerkAuth:
-    def __init__(self):
-        self.jwks = None
-
-    async def get_jwks(self):
-        if self.jwks:
-            return self.jwks
-        
-        jwks_url = settings.CLERK_JWKS_URL
-        if not jwks_url:
-            logger.error("CLERK_JWKS_URL not set in configuration")
-            raise HTTPException(status_code=500, detail="Auth configuration error")
-            
-        async with httpx.AsyncClient() as client:
-            response = await client.get(jwks_url)
-            if response.status_code != 200:
-                logger.error(f"Failed to fetch JWKS from Clerk: {response.text}")
-                raise HTTPException(status_code=500, detail="Failed to fetch auth keys")
-            self.jwks = response.json()
-            return self.jwks
-
-    async def verify_token(self, token: str):
-        try:
-            jwks = await self.get_jwks()
-            
-            # Unverified header to find the key id (kid)
-            unverified_header = jwt.get_unverified_header(token)
-            kid = unverified_header.get("kid")
-            
-            if not kid:
-                raise HTTPException(status_code=401, detail="Invalid token header")
-                
-            # Find the correct key in JWKS
-            rsa_key = {}
-            for key in jwks.get("keys", []):
-                if key.get("kid") == kid:
-                    rsa_key = {
-                        "kty": key.get("kty"),
-                        "kid": key.get("kid"),
-                        "use": key.get("use"),
-                        "n": key.get("n"),
-                        "e": key.get("e")
-                    }
-                    break
-            
-            if not rsa_key:
-                raise HTTPException(status_code=401, detail="Invalid auth key")
-                
-            # Verify and decode
-            payload = jwt.decode(
-                token,
-                rsa_key,
-                algorithms=["RS256"],
-            )
-            
-            return payload
-            
-        except JWTError as e:
-            logger.error(f"JWT Verification failed: {e}")
-            raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
-        except Exception as e:
-            logger.error(f"Auth error: {e}")
-            raise HTTPException(status_code=401, detail="Authentication failed")
-
-clerk_auth = ClerkAuth()
-
 async def get_current_user(res: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-    """FastAPI dependency to get the current authenticated user from Clerk JWT"""
-    if not res or res.credentials in ("mock-token", "test-token", "demo-token"):
-        # Local development / test fallback
-        return {"user_id": "demo-user-id", "payload": {"sub": "demo-user-id"}}
+    """FastAPI dependency to get the current authenticated user from custom JWT"""
+    demo_mode = os.environ.get("DEMO_MODE", "false").lower() == "true"
+    if demo_mode and (not res or res.credentials in ("mock-token", "test-token", "demo-token")):
+        # Local development / test fallback — only allowed when DEMO_MODE=true
+        return {"user_id": "demo-user-id"}
         
     token = res.credentials
     try:
-        payload = await clerk_auth.verify_token(token)
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="User ID not found in token")
         return {"user_id": user_id, "payload": payload}
+    except JWTError as e:
+        logger.error(f"JWT Verification failed: {e}")
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
     except Exception as e:
         logger.error(f"Authentication failed: {e}")
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
