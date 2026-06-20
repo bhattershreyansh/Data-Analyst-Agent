@@ -48,7 +48,7 @@ interface Blueprint {
 export default function SchemaBlueprint() {
   const { getToken } = useAuth();
   const { user } = useUser();
-  const userId = user?.id;
+  const userId = user?.user_id;
   const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,35 +137,35 @@ export default function SchemaBlueprint() {
 
       <main className="flex-1 flex flex-col md:flex-row h-[calc(100vh-80px)] overflow-hidden">
         {/* SIDEBAR: Table List */}
-        <aside className="w-full md:w-80 border-r border-white/5 bg-black/20 backdrop-blur-md flex flex-col">
+        <aside className="w-full md:w-80 border-r border-outline-variant bg-surface-container-low flex flex-col">
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
-                <Database className="h-5 w-5 text-primary" />
+              <h2 className="flex items-center gap-2 text-md font-bold uppercase tracking-tight text-white">
+                <Database className="h-4.5 w-4.5 text-primary" />
                 Schema Blueprint
               </h2>
               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             </div>
 
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-outline" />
               <Input
                 placeholder="Search tables..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 bg-white/5 border-white/10 rounded-xl focus:ring-primary/20"
+                className="pl-9 h-10 bg-surface-dim border-outline-variant rounded-[4px] text-xs font-mono focus:ring-primary/20 placeholder:text-outline-variant/40 text-white"
               />
             </div>
 
             {/* Stats */}
             <div className="flex gap-2">
-              <div className="flex-1 bg-white/5 rounded-xl px-3 py-2 text-center">
-                <div className="text-lg font-black text-white">{blueprint?.tables.length || 0}</div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Tables</div>
+              <div className="flex-1 bg-surface-container border border-outline-variant/30 rounded p-2 text-center">
+                <div className="text-md font-black text-white">{blueprint?.tables.length || 0}</div>
+                <div className="text-[9px] text-outline font-mono uppercase tracking-widest">Tables</div>
               </div>
-              <div className="flex-1 bg-white/5 rounded-xl px-3 py-2 text-center">
-                <div className="text-lg font-black text-primary">{uniqueRelCount}</div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Links</div>
+              <div className="flex-1 bg-surface-container border border-outline-variant/30 rounded p-2 text-center">
+                <div className="text-md font-black text-primary">{uniqueRelCount}</div>
+                <div className="text-[9px] text-outline font-mono uppercase tracking-widest">Links</div>
               </div>
             </div>
           </div>
@@ -177,31 +177,31 @@ export default function SchemaBlueprint() {
                   key={table.name}
                   onClick={() => setSelectedTable(table.name === selectedTable ? null : table.name)}
                   className={cn(
-                    "w-full text-left px-4 py-3 rounded-xl transition-all group relative overflow-hidden",
+                    "w-full text-left px-3.5 py-2.5 rounded transition-all group relative overflow-hidden border",
                     selectedTable === table.name
-                      ? "bg-primary/20 border border-primary/30 text-primary shadow-lg shadow-primary/5"
-                      : "hover:bg-white/5 text-muted-foreground border border-transparent"
+                      ? "bg-primary/10 border-primary/30 text-primary"
+                      : "hover:bg-surface-container/60 text-on-surface-variant border-transparent"
                   )}
                 >
                   <div className="flex items-center justify-between relative z-10">
-                    <div className="flex items-center gap-3">
-                      <TableIcon className={cn("h-4 w-4", selectedTable === table.name ? "text-primary" : "text-muted-foreground/40")} />
-                      <span className="font-medium text-sm truncate">{table.name}</span>
+                    <div className="flex items-center gap-2.5">
+                      <TableIcon className={cn("h-4 w-4", selectedTable === table.name ? "text-primary" : "text-outline")} />
+                      <span className="font-mono text-xs truncate">{table.name}</span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground/50">{table.columns.length} cols</span>
+                    <span className="text-[10px] text-outline-variant font-mono">{table.columns.length} cols</span>
                   </div>
                 </button>
               ))}
             </div>
           </ScrollArea>
 
-          <div className="p-4 border-t border-white/5">
+          <div className="p-4 border-t border-outline-variant">
             <Button
               variant="outline"
               size="sm"
               onClick={() => fetchBlueprint(true)}
               disabled={aiEnriching || loading}
-              className="w-full glass border-primary/30 text-primary hover:bg-primary hover:text-white rounded-xl h-10 font-bold"
+              className="w-full bg-surface-container border-outline-variant hover:border-primary/50 text-primary hover:bg-primary hover:text-on-primary rounded-[4px] h-9 font-mono text-[10px] uppercase tracking-wider font-bold"
             >
               {aiEnriching ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
               Enrich Schema
@@ -210,41 +210,41 @@ export default function SchemaBlueprint() {
         </aside>
 
         {/* MAIN AREA: Card-based schema visualization */}
-        <section className="flex-1 relative bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent overflow-hidden flex">
+        <section className="flex-grow flex-1 relative bg-surface-dim overflow-hidden flex">
           
           {/* Table Grid */}
-          <div className="flex-1 overflow-auto p-8">
+          <div className="flex-grow flex-1 overflow-auto p-8">
             {loading ? (
               <div className="h-full flex flex-col items-center justify-center gap-4">
-                <div className="h-16 w-16 rounded-3xl bg-primary/20 flex items-center justify-center neon-glow">
-                  <RefreshCw className="h-8 w-8 text-primary animate-spin" />
+                <div className="h-12 w-12 rounded bg-primary/10 flex items-center justify-center border border-primary/20">
+                  <RefreshCw className="h-6 w-6 text-primary animate-spin" />
                 </div>
-                <p className="text-muted-foreground font-medium animate-pulse">Syncing Database Structure Map...</p>
+                <p className="text-outline font-mono text-[11px] uppercase tracking-wider animate-pulse">Syncing Database Structure Map...</p>
               </div>
             ) : !blueprint ? (
               <div className="h-full flex flex-col items-center justify-center gap-4">
-                <Database className="h-16 w-16 text-muted-foreground/20" />
-                <p className="text-muted-foreground">No data source active. Upload a file or connect a database.</p>
+                <Database className="h-12 w-12 text-outline-variant/30" />
+                <p className="text-outline font-mono text-[11px] uppercase tracking-wider">No data source active. Connect a database to trace.</p>
               </div>
             ) : (
               <div>
                 {/* Empty state when no table is selected */}
                 {!selectedTable ? (
-                  <div className="h-full flex flex-col items-center justify-center gap-4 select-none">
-                    <div className="h-20 w-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center">
-                      <TableIcon className="h-9 w-9 text-muted-foreground/30" />
+                  <div className="h-full flex flex-col items-center justify-center gap-4 select-none min-h-[300px]">
+                    <div className="h-16 w-16 rounded bg-surface-container border border-outline-variant flex items-center justify-center">
+                      <TableIcon className="h-6 w-6 text-outline-variant/40" />
                     </div>
                     <div className="text-center">
-                      <p className="text-lg font-bold text-white/30">No table selected</p>
-                      <p className="text-sm text-muted-foreground/40 mt-1">Choose a table from the sidebar to view its schema</p>
+                      <p className="text-xs font-bold text-white uppercase tracking-wider">No table selected</p>
+                      <p className="text-[11px] text-outline font-mono uppercase tracking-wide mt-1.5">Choose a table from the sidebar to inspect schema blueprint</p>
                     </div>
                   </div>
                 ) : (
                 <div>
                   {/* Header hint */}
-                  <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground/50">
-                    <Info className="h-3.5 w-3.5" />
-                    <span>Inspecting <span className="text-primary font-bold">{selectedTable}</span>. Click it again to deselect.</span>
+                  <div className="mb-6 flex items-center gap-2 text-[10px] font-mono text-outline uppercase tracking-wider">
+                    <Info className="h-3.5 w-3.5 text-primary" />
+                    <span>Inspecting <span className="text-primary font-bold">{selectedTable}</span>. Click again to deselect.</span>
                   </div>
 
                   {/* Table Cards Grid */}
@@ -259,20 +259,20 @@ export default function SchemaBlueprint() {
                       return (
                         <motion.div
                           key={table.name}
-                          initial={{ opacity: 0, y: 12 }}
+                          initial={{ opacity: 0, y: 10 }}
                           animate={{ 
-                            opacity: isUnrelated ? 0.2 : 1, 
+                            opacity: isUnrelated ? 0.3 : 1, 
                             y: 0,
-                            scale: isSelected ? 1.02 : 1  
+                            scale: isSelected ? 1.01 : 1  
                           }}
-                          transition={{ delay: idx * 0.02, duration: 0.25 }}
+                          transition={{ delay: idx * 0.01, duration: 0.2 }}
                         className={cn(
-                          "rounded-2xl border p-4 flex flex-col gap-3 cursor-pointer transition-all",
+                          "rounded border p-4 flex flex-col gap-3.5 cursor-pointer transition-all",
                           isSelected
-                            ? "border-primary/60 bg-primary/10 shadow-xl shadow-primary/10"
+                            ? "border-primary/60 bg-primary/5 shadow-md shadow-primary/5"
                             : isNeighbor
-                            ? "border-emerald-500/40 bg-emerald-500/5"
-                            : "border-white/8 bg-white/3 hover:border-white/20 hover:bg-white/5"
+                            ? "border-emerald-500/30 bg-emerald-500/5"
+                            : "border-outline-variant bg-surface-container-low hover:border-outline hover:bg-surface-container"
                         )}
                         onClick={() => setSelectedTable(isSelected ? null : table.name)}
                       >
@@ -280,18 +280,18 @@ export default function SchemaBlueprint() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <div className={cn(
-                              "p-1.5 rounded-lg",
-                              isSelected ? "bg-primary/20 text-primary" 
-                              : isNeighbor ? "bg-emerald-500/20 text-emerald-400"
-                              : "bg-white/10 text-muted-foreground"
+                              "p-1.5 rounded",
+                              isSelected ? "bg-primary/10 text-primary border border-primary/25" 
+                              : isNeighbor ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
+                              : "bg-surface-container-high text-outline"
                             )}>
                               <TableIcon className="h-3.5 w-3.5" />
                             </div>
-                            <span className="font-bold text-sm text-white truncate max-w-[120px]">{table.name}</span>
+                            <span className="font-mono text-xs font-bold text-white truncate max-w-[120px]">{table.name}</span>
                           </div>
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleExpand(table.name); }}
-                            className="p-1 rounded-md hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+                            className="p-1 rounded hover:bg-white/5 text-outline hover:text-white transition-colors"
                           >
                             {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                           </button>
@@ -301,12 +301,12 @@ export default function SchemaBlueprint() {
                         {!isExpanded && (
                           <div className="flex flex-wrap gap-1.5">
                             {table.columns.slice(0, 4).map(col => (
-                              <span key={col} className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/5 border border-white/8 text-muted-foreground truncate max-w-full">
+                              <span key={col} className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-lowest border border-outline-variant/30 text-on-surface-variant truncate max-w-full">
                                 {col}
                               </span>
                             ))}
                             {table.columns.length > 4 && (
-                              <span className="text-[10px] px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-primary font-bold">
+                              <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary font-bold">
                                 +{table.columns.length - 4} more
                               </span>
                             )}
@@ -315,9 +315,9 @@ export default function SchemaBlueprint() {
 
                         {/* Expanded: all columns */}
                         {isExpanded && (
-                          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto pr-1">
+                          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                             {table.columns.map(col => (
-                              <div key={col} className="text-[11px] font-mono px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/5 text-white/70 flex items-center gap-2">
+                              <div key={col} className="text-[10px] font-mono px-2.5 py-1.5 rounded bg-surface-container-lowest border border-outline-variant/35 text-white/70 flex items-center gap-2">
                                 <div className="h-1 w-1 rounded-full bg-primary/50 flex-shrink-0" />
                                 {col}
                               </div>
@@ -327,24 +327,24 @@ export default function SchemaBlueprint() {
 
                         {/* Relations footer */}
                         {relations.length > 0 && (
-                          <div className="flex items-center gap-1.5 pt-1 border-t border-white/5">
-                            <LinkIcon className="h-3 w-3 text-muted-foreground/40 flex-shrink-0" />
+                          <div className="flex items-center gap-1.5 pt-1.5 border-t border-outline-variant/20">
+                            <LinkIcon className="h-3 w-3 text-outline/40 flex-shrink-0" />
                             <div className="flex flex-wrap gap-1">
                               {relations.slice(0, 3).map(r => (
                                 <span 
                                   key={r.neighbor} 
                                   className={cn(
-                                    "text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide",
+                                    "text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide border",
                                     r.type === 'semantic' 
-                                      ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                                      : "bg-primary/10 text-primary/70 border border-primary/20"
+                                      ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                      : "bg-primary/10 text-primary/70 border-primary/20"
                                   )}
                                 >
                                   {r.neighbor}
                                 </span>
                               ))}
                               {relations.length > 3 && (
-                                <span className="text-[9px] text-muted-foreground/50">+{relations.length - 3}</span>
+                                <span className="text-[8px] text-outline/50 font-mono">+{relations.length - 3}</span>
                               )}
                             </div>
                           </div>
@@ -363,22 +363,22 @@ export default function SchemaBlueprint() {
           <AnimatePresence>
             {selectedTable && selectedTableData && (
               <motion.aside
-                initial={{ x: 340, opacity: 0 }}
+                initial={{ x: 320, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 340, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="w-80 border-l border-white/10 bg-black/60 backdrop-blur-xl p-6 overflow-y-auto flex flex-col gap-6 flex-shrink-0"
+                exit={{ x: 320, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 35 }}
+                className="w-80 border-l border-outline-variant bg-surface-container-low p-6 overflow-y-auto flex flex-col gap-6 flex-shrink-0 custom-scrollbar"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Selected Table</div>
-                    <h3 className="text-2xl font-black text-white leading-none">{selectedTable}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{selectedTableData.columns.length} columns · {selectedRelations.length} connections</p>
+                    <div className="text-[9px] font-mono font-bold text-primary uppercase tracking-widest mb-1">Selected Table</div>
+                    <h3 className="text-xl font-bold text-white leading-none uppercase tracking-tight font-sans">{selectedTable}</h3>
+                    <p className="text-[10px] font-mono text-outline mt-1.5">{selectedTableData.columns.length} columns · {selectedRelations.length} links</p>
                   </div>
                   <button
                     onClick={() => setSelectedTable(null)}
-                    className="p-2 rounded-xl hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+                    className="p-1 rounded hover:bg-white/5 text-outline hover:text-white transition-colors"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -386,14 +386,14 @@ export default function SchemaBlueprint() {
 
                 {/* All columns */}
                 <div>
-                  <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-2 mb-3">
-                    <TableIcon className="h-3.5 w-3.5" />
+                  <h4 className="text-[10px] font-mono font-bold text-outline uppercase tracking-wider flex items-center gap-2 mb-3">
+                    <TableIcon className="h-3.5 w-3.5 text-primary" />
                     All Columns
                   </h4>
                   <div className="flex flex-col gap-1.5">
                     {selectedTableData.columns.map(col => (
-                      <div key={col} className="px-3 py-2 rounded-xl bg-white/5 border border-white/5 text-sm font-mono flex items-center gap-2 hover:border-primary/30 transition-all">
-                        <div className="h-1.5 w-1.5 rounded-full bg-primary/50 flex-shrink-0" />
+                       <div key={col} className="px-3 py-2.5 rounded bg-surface-container border border-outline-variant text-[11px] font-mono flex items-center gap-2 text-white/95">
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary/60 flex-shrink-0" />
                         {col}
                       </div>
                     ))}
@@ -403,8 +403,8 @@ export default function SchemaBlueprint() {
                 {/* Connections */}
                 {selectedRelations.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-2 mb-3">
-                      <LinkIcon className="h-3.5 w-3.5" />
+                    <h4 className="text-[10px] font-mono font-bold text-outline uppercase tracking-wider flex items-center gap-2 mb-3">
+                      <LinkIcon className="h-3.5 w-3.5 text-primary" />
                       Connections ({selectedRelations.length})
                     </h4>
                     <div className="flex flex-col gap-2">
@@ -412,11 +412,11 @@ export default function SchemaBlueprint() {
                         <button
                           key={r.neighbor}
                           onClick={() => setSelectedTable(r.neighbor)}
-                          className="flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all text-left group"
+                          className="flex items-center justify-between p-3 rounded border border-outline-variant bg-surface-container hover:bg-surface-container-high transition-all text-left group"
                         >
                           <div>
                             <div className={cn(
-                              "text-[9px] font-bold uppercase tracking-widest mb-0.5 flex items-center gap-1",
+                              "text-[8px] font-mono font-bold uppercase tracking-widest mb-0.5 flex items-center gap-1",
                               r.type === 'semantic' ? "text-amber-400" : "text-primary"
                             )}>
                               {r.type === 'semantic' ? (
@@ -431,9 +431,9 @@ export default function SchemaBlueprint() {
                                 </>
                               )}
                             </div>
-                            <div className="font-bold text-white text-sm">{r.neighbor}</div>
+                            <div className="font-mono font-bold text-white text-xs">{r.neighbor}</div>
                           </div>
-                          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-all -translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100" />
+                          <ArrowRight className="h-4 w-4 text-outline group-hover:text-primary transition-all -translate-x-1 group-hover:translate-x-0 opacity-0 group-hover:opacity-100" />
                         </button>
                       ))}
                     </div>
@@ -452,9 +452,9 @@ export default function SchemaBlueprint() {
                 exit={{ opacity: 0 }}
                 className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-none"
               >
-                <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-sm text-muted-foreground shadow-2xl">
+                <div className="flex items-center gap-2.5 px-4 py-2.5 rounded border border-outline-variant bg-surface-container-low text-xs text-outline font-mono uppercase tracking-wide">
                   <TableIcon className="h-4 w-4 text-primary flex-shrink-0" />
-                  <span>Select a table from the grid to inspect its columns and connections</span>
+                  <span>Select a table from grid to inspect columns</span>
                 </div>
               </motion.div>
             )}

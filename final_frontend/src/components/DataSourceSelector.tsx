@@ -113,7 +113,7 @@ export function DataSourceSelector({ onUploadClick, onConnectClick }: {
 
             if (response.success) {
                 toast({
-                    title: "Neural Link Terminated",
+                    title: "Source Disconnected",
                     description: "Disconnected from the data source",
                 });
                 fetchModeStatus();
@@ -159,7 +159,7 @@ export function DataSourceSelector({ onUploadClick, onConnectClick }: {
                 <Button variant="ghost" className="h-10 px-4 rounded-xl glass border-white/10 hover:bg-white/5 transition-all group">
                     <Database className="h-4 w-4 mr-2 text-primary group-hover:scale-110 transition-transform" />
                     <span className="font-bold text-white/90 text-sm hidden sm:inline">
-                        {modeStatus?.active_source?.name || "Neural Link: Offline"}
+                        {modeStatus?.active_source?.name || "Source: Offline"}
                     </span>
                     {modeStatus?.mode && (
                         <div className={cn(
@@ -172,9 +172,9 @@ export function DataSourceSelector({ onUploadClick, onConnectClick }: {
 
             <DropdownMenuContent align="end" className="w-80 glass-card rounded-2xl border-white/10 shadow-2xl p-2 mt-2">
                 <DropdownMenuLabel className="flex items-center justify-between px-3 py-3">
-                    <span className="text-xs font-black uppercase tracking-widest text-white/40">Data Ecosystem</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-white/40">Data Sources</span>
                     <Badge variant="secondary" className="glass border-white/10 text-primary text-[10px] h-5 px-2 font-bold">
-                        {sources.length} Nodes
+                        {sources.length} Sources
                     </Badge>
                 </DropdownMenuLabel>
 
@@ -187,10 +187,10 @@ export function DataSourceSelector({ onUploadClick, onConnectClick }: {
                         <div className="flex items-center gap-3 px-2">
                             <span className="opacity-80 flex items-center">{getSourceIcon(modeStatus.active_source.type)}</span>
                             <div className="flex-1 min-w-0">
-                                <div className="text-[10px] font-black uppercase tracking-tighter text-primary mb-0.5">Active Neural Link</div>
+                                <div className="text-[10px] font-black uppercase tracking-tighter text-primary mb-0.5">Active Connection</div>
                                 <div className="font-bold text-white truncate">{modeStatus.active_source.name}</div>
                                 <div className="text-[10px] text-muted-foreground/60 font-medium">
-                                    {modeStatus.active_source.table_count} Knowledge Modules
+                                    {modeStatus.active_source.table_count} Tables
                                 </div>
                             </div>
                             <button 
@@ -199,7 +199,7 @@ export function DataSourceSelector({ onUploadClick, onConnectClick }: {
                                     deactivateSource();
                                 }}
                                 className="h-8 w-8 rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-500 flex items-center justify-center transition-all border border-white/5 hover:border-red-500/30"
-                                title="Disconnect Neural Link"
+                                title="Disconnect Source"
                             >
                                 <X className="h-4 w-4" />
                             </button>
@@ -212,7 +212,7 @@ export function DataSourceSelector({ onUploadClick, onConnectClick }: {
                     {sources.length > 0 ? (
                         <>
                             <DropdownMenuLabel className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest px-3 py-3">
-                                Available Syntaxes
+                                Available Sources
                             </DropdownMenuLabel>
                             {sources.filter(s => s.source_id !== modeStatus?.active_source?.source_id).map((source) => (
                                 <DropdownMenuItem
@@ -238,7 +238,7 @@ export function DataSourceSelector({ onUploadClick, onConnectClick }: {
                     ) : !modeStatus?.active_source && (
                         <div className="px-4 py-8 text-center space-y-3">
                             <div className="flex justify-center opacity-20"><Database className="h-8 w-8 text-muted-foreground" /></div>
-                            <p className="text-xs text-muted-foreground/40 font-medium">No intelligence vectors established.</p>
+                            <p className="text-xs text-muted-foreground/40 font-medium">No database connections established.</p>
                         </div>
                     )}
                 </div>

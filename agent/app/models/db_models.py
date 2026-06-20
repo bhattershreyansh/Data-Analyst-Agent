@@ -31,6 +31,7 @@ class SavedChart(Base):
     x_axis = Column(String(100), nullable=True)
     y_axis = Column(String(100), nullable=True)
     timestamp = Column(DateTime, default=datetime.now)
+    insight = Column(String(2000), nullable=True)
     
     user = relationship("User", back_populates="charts")
 

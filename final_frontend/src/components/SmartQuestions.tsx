@@ -67,11 +67,11 @@ export function SmartQuestions({ sourceId, sourceName, onQuestionClick }: SmartQ
 
     const getCategoryColor = (category: string) => {
         const colors: Record<string, string> = {
-            Trends: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-            Performance: "bg-green-500/10 text-green-500 border-green-500/20",
-            Comparison: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-            Patterns: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-            Optimization: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+            Trends: "bg-primary/10 text-primary border-primary/20",
+            Performance: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+            Comparison: "bg-secondary-container/40 text-on-secondary-container border-secondary-container/20",
+            Patterns: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+            Optimization: "bg-accent/10 text-accent border-accent/20",
         };
         return colors[category] || "bg-gray-500/10 text-gray-500 border-gray-500/20";
     };
@@ -93,9 +93,9 @@ export function SmartQuestions({ sourceId, sourceName, onQuestionClick }: SmartQ
         return (
             <div className="glass-card rounded-3xl p-8 border-white/5 text-center space-y-4">
                 <Sparkles className="h-10 w-10 text-primary mx-auto opacity-20" />
-                <h3 className="text-xl font-bold text-white tracking-tight">Intelligence Suggestions</h3>
+                <h3 className="text-xl font-bold text-white tracking-tight">Suggested Queries</h3>
                 <p className="text-sm text-muted-foreground/60 max-w-xs mx-auto">
-                    Select a neural data link to initialize automated intelligence queries.
+                    Select a database connection to view suggested queries.
                 </p>
             </div>
         );
@@ -110,7 +110,7 @@ export function SmartQuestions({ sourceId, sourceName, onQuestionClick }: SmartQ
                         Smart Queries
                     </h3>
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mt-1">
-                        Neural insights for {sourceName || "Active Data Source"}
+                        Suggested queries for {sourceName || "Active Data Source"}
                         {domain && (
                             <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-primary/30 text-primary">
                                 {domain}
@@ -160,7 +160,7 @@ export function SmartQuestions({ sourceId, sourceName, onQuestionClick }: SmartQ
                                                 {q.category}
                                             </Badge>
                                             <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">
-                                                {q.chart_type} topology
+                                                {q.chart_type} chart
                                             </span>
                                         </div>
                                     </div>
@@ -174,14 +174,14 @@ export function SmartQuestions({ sourceId, sourceName, onQuestionClick }: SmartQ
                 ) : (
                     <div className="text-center py-12 space-y-6">
                         <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-10" />
-                        <p className="text-muted-foreground italic text-sm">No intelligence modules generated for this source.</p>
+                        <p className="text-muted-foreground italic text-sm">No suggestions generated for this source.</p>
                         <Button
                             variant="outline"
                             size="lg"
                             onClick={() => fetchQuestions(true)}
                             className="rounded-full px-8 glass border-primary/30 text-primary hover:bg-primary/10 font-bold"
                         >
-                            Generate Neural Nodes
+                            Generate Suggestions
                         </Button>
                     </div>
                 )}

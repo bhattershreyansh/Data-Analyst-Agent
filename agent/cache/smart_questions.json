@@ -438,5 +438,170 @@
     "domain": "ecommerce",
     "source_name": "Demo Shopify Store",
     "timestamp": "2026-06-17T21:52:55.608826"
+  },
+  "demo-shopify-78dfb81c-4847-4d21-ab71-569fa96ea9ab": {
+    "questions": [
+      {
+        "question": "What are the total sales by product type?",
+        "category": "Patterns",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify product types with the highest sales, allowing for informed decisions on inventory management and marketing strategies.",
+        "id": "q1",
+        "generated_at": "2026-06-17T22:47:52.297659"
+      },
+      {
+        "question": "Compare the average order value between fulfilled and unfulfilled orders",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question highlights potential issues in the fulfillment process and helps identify areas for improvement to increase customer satisfaction and revenue.",
+        "id": "q2",
+        "generated_at": "2026-06-17T22:47:52.297710"
+      },
+      {
+        "question": "Show the top 10 customers by total spent",
+        "category": "Performance",
+        "chart_type": "table",
+        "reasoning": "This question identifies the most valuable customers, enabling targeted marketing efforts and personalized services to retain and increase their loyalty.",
+        "id": "q3",
+        "generated_at": "2026-06-17T22:47:52.297713"
+      },
+      {
+        "question": "List the top 5 products with the highest total tax",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify products with high tax implications, allowing for adjustments in pricing or tax strategies to remain competitive.",
+        "id": "q4",
+        "generated_at": "2026-06-17T22:47:52.297715"
+      },
+      {
+        "question": "What is the monthly trend of total refunds?",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question monitors the refund rate over time, enabling the detection of potential issues in product quality or customer satisfaction.",
+        "id": "q5",
+        "generated_at": "2026-06-17T22:47:52.297717"
+      },
+      {
+        "question": "Compare the average price of products by vendor",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify vendors with higher or lower priced products, informing decisions on product offerings and pricing strategies to remain competitive.",
+        "id": "q6",
+        "generated_at": "2026-06-17T22:47:52.297719"
+      }
+    ],
+    "domain": "ecommerce",
+    "source_name": "Demo Shopify Store",
+    "timestamp": "2026-06-17T22:47:52.297859"
+  },
+  "demo-shopify-3f0ca528-74de-41c6-a15b-d7ae7eb8ba62": {
+    "questions": [
+      {
+        "question": "What are the top 5 products by total revenue?",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify the best-selling products, which can inform inventory management and marketing strategies.",
+        "id": "q1",
+        "generated_at": "2026-06-17T23:10:10.532974"
+      },
+      {
+        "question": "Compare average order value by region",
+        "category": "Comparison",
+        "chart_type": "line",
+        "reasoning": "This question reveals regional differences in customer spending habits, which can guide targeted marketing and pricing strategies.",
+        "id": "q2",
+        "generated_at": "2026-06-17T23:10:10.532996"
+      },
+      {
+        "question": "Show the distribution of order totals by financial status",
+        "category": "Patterns",
+        "chart_type": "pie",
+        "reasoning": "This question highlights the relationship between order totals and financial status, which can help identify opportunities to improve payment processing and reduce fraud.",
+        "id": "q3",
+        "generated_at": "2026-06-17T23:10:10.533001"
+      },
+      {
+        "question": "List the top 10 customers with the highest total spend",
+        "category": "Performance",
+        "chart_type": "table",
+        "reasoning": "This question identifies the most valuable customers, which can inform loyalty programs and personalized marketing efforts.",
+        "id": "q4",
+        "generated_at": "2026-06-17T23:10:10.533040"
+      },
+      {
+        "question": "What is the monthly trend of total sales over the past year?",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question reveals seasonal fluctuations and overall sales growth, which can guide forecasting and resource allocation.",
+        "id": "q5",
+        "generated_at": "2026-06-17T23:10:10.533043"
+      },
+      {
+        "question": "Compare the average discount value by discount type",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question evaluates the effectiveness of different discount types, which can help optimize pricing and promotion strategies.",
+        "id": "q6",
+        "generated_at": "2026-06-17T23:10:10.533044"
+      }
+    ],
+    "domain": "ecommerce",
+    "source_name": "Demo Shopify Store",
+    "timestamp": "2026-06-17T23:10:10.533093"
+  },
+  "demo-shopify-7920646b-ad60-4094-8f50-7a8ebfb59910": {
+    "questions": [
+      {
+        "question": "What are the top 5 provinces by total sales?",
+        "category": "Performance",
+        "chart_type": "bar",
+        "reasoning": "This question helps identify high-performing regions, allowing for targeted marketing and resource allocation.",
+        "id": "q1",
+        "generated_at": "2026-06-20T15:12:41.399975"
+      },
+      {
+        "question": "Compare average order value between fulfilled and unfulfilled orders",
+        "category": "Comparison",
+        "chart_type": "bar",
+        "reasoning": "This question reveals potential issues in the fulfillment process and opportunities to improve customer satisfaction.",
+        "id": "q2",
+        "generated_at": "2026-06-20T15:12:41.399989"
+      },
+      {
+        "question": "Show the monthly trend of total discounts applied",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question tracks the effectiveness of discount strategies over time, informing future promotions and pricing decisions.",
+        "id": "q3",
+        "generated_at": "2026-06-20T15:12:41.399991"
+      },
+      {
+        "question": "List the top 10 products by total revenue",
+        "category": "Performance",
+        "chart_type": "table",
+        "reasoning": "This question identifies best-selling products, enabling focused marketing efforts and inventory management.",
+        "id": "q4",
+        "generated_at": "2026-06-20T15:12:41.399993"
+      },
+      {
+        "question": "What is the distribution of order totals by financial status?",
+        "category": "Patterns",
+        "chart_type": "pie",
+        "reasoning": "This question analyzes the financial health of orders, highlighting areas for improvement in payment processing and customer credit management.",
+        "id": "q5",
+        "generated_at": "2026-06-20T15:12:41.399995"
+      },
+      {
+        "question": "Show the average refund amount by month",
+        "category": "Trends",
+        "chart_type": "line",
+        "reasoning": "This question monitors refund rates over time, indicating potential product quality issues or customer satisfaction problems.",
+        "id": "q6",
+        "generated_at": "2026-06-20T15:12:41.399997"
+      }
+    ],
+    "domain": "ecommerce",
+    "source_name": "Demo Shopify Store",
+    "timestamp": "2026-06-20T15:12:41.400108"
   }
 }

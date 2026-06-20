@@ -44,6 +44,10 @@ class SavedChart(BaseModel):
     y_axis: Optional[str] = None
     timestamp: datetime
     user_id: Optional[str] = None
+    insight: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 
 class DashboardCreateRequest(BaseModel):

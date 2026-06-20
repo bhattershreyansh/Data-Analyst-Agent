@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import { ShieldAlert, CheckCircle, Play, Loader2, ChevronDown, ChevronUp, Activity } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { ShieldAlert, CheckCircle, Play, Loader2, Activity, Terminal, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { dataSourcesAPI, AnomalyItem } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -17,8 +15,7 @@ export function AnomalyAlertCenter({ sourceId, onSuggestedQueryClick }: AnomalyA
   const { getToken } = useAuth();
   const [anomalies, setAnomalies] = useState<AnomalyItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [hasScanned, setHasScanned] = useState(false);
+  const [activeTab, setActiveTab] = useState<'new' | 'ongoing' | 'resolved'>('new');
 
   const triggerScan = async () => {
     if (!sourceId) return;
@@ -28,12 +25,10 @@ export function AnomalyAlertCenter({ sourceId, onSuggestedQueryClick }: AnomalyA
       const res = await dataSourcesAPI.scanAnomalies(sourceId, token);
       if (res.success && res.data) {
         setAnomalies(res.data.anomalies || []);
-        setHasScanned(true);
         if (res.data.anomalies && res.data.anomalies.length > 0) {
-          toast.warning(`Scanner Alert: Found ${res.data.anomalies.length} active anomalies.`);
-          setExpanded(true);
+          toast.warning(`Forensic Scan Complete: Found ${res.data.anomalies.length} active anomalies.`);
         } else {
-          toast.success("Scanner complete: Database is fully healthy. No anomalies found.");
+          toast.success("Scan Complete: Database is fully healthy.");
         }
       } else {
         toast.error("Diagnostic scan failed.");
@@ -46,177 +41,199 @@ export function AnomalyAlertCenter({ sourceId, onSuggestedQueryClick }: AnomalyA
     }
   };
 
+  // Run initial scan on mount if source is connected
+  useEffect(() => {
+    if (sourceId) {
+      triggerScan();
+    } else {
+      setAnomalies([]);
+    }
+  }, [sourceId]);
+
   if (!sourceId) {
     return (
-      <Card className="glass border-white/10 p-8 rounded-3xl text-center space-y-4">
-        <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-primary w-fit mx-auto">
-          <ShieldAlert className="h-8 w-8 opacity-30" />
+      <aside className="fixed left-0 top-16 bottom-9 w-80 bg-surface-container-low border-r border-outline-variant flex flex-col p-4 justify-center items-center text-center space-y-4 z-40">
+        <div className="p-3 rounded bg-surface-container border border-outline-variant text-primary">
+          <ShieldAlert className="h-5 w-5 opacity-45" />
         </div>
-        <h3 className="text-xl font-bold text-white tracking-tight">Anomaly Monitor</h3>
-        <p className="text-sm text-muted-foreground/60 max-w-xs mx-auto">
-          Connect a data source to enable proactive anomaly scanning and financial impact analysis.
+        <h3 className="text-xs font-bold text-white uppercase tracking-wider">Anomaly Alerts</h3>
+        <p className="text-[11px] text-outline-variant max-w-[200px] leading-relaxed">
+          Connect a data source to enable proactive anomaly scanning.
         </p>
-      </Card>
+      </aside>
     );
   }
 
-  const activeAlerts = anomalies.filter(a => a.state !== 'RESOLVED');
+  // Filter alerts by state
+  const newAlerts = anomalies.filter(a => a.state === 'NEW');
+  const ongoingAlerts = anomalies.filter(a => a.state === 'ONGOING');
   const resolvedAlerts = anomalies.filter(a => a.state === 'RESOLVED');
 
+  const getFilteredAlerts = () => {
+    if (activeTab === 'new') return newAlerts;
+    if (activeTab === 'ongoing') return ongoingAlerts;
+    return resolvedAlerts;
+  };
+
   return (
-    <Card className="glass border-white/10 p-6 rounded-3xl overflow-hidden shadow-xl relative backdrop-blur-md">
-      {/* Background radial accent */}
-      <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
-      
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <aside className="fixed left-0 top-16 bottom-9 w-80 bg-surface-container-low border-r border-outline-variant flex flex-col z-40">
+      {/* Sidebar Header */}
+      <div className="p-4 border-b border-outline-variant">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-primary">
-            <ShieldAlert className="h-6 w-6" />
+          <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+            <Activity className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-bold text-white text-lg tracking-tight">Indispensable Anomaly Monitor</h3>
-            <p className="text-muted-foreground text-xs leading-relaxed max-w-md">
-              Scans inventory velocity, variant refunds, discount leakage, and double-windowed sales dips.
-            </p>
+            <h2 className="font-mono text-xs font-black uppercase tracking-widest text-white">Anomaly Alerts</h2>
+            <p className="text-[9px] text-outline font-mono uppercase tracking-wider">Forensic Monitoring</p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={triggerScan}
-            disabled={loading}
-            className="rounded-2xl gap-2 font-semibold shadow-lg shadow-primary/10 py-5 px-6"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Activity className="h-4 w-4" />
-            )}
-            {loading ? "Scanning Metrics..." : "Run Diagnostic Scan"}
-          </Button>
-
-          {hasScanned && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setExpanded(!expanded)}
-              className="text-muted-foreground hover:text-white rounded-xl"
-            >
-              {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-            </Button>
-          )}
         </div>
       </div>
 
-      {hasScanned && (
-        <div className="flex items-center gap-3 mt-4 text-xs font-semibold text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-            {activeAlerts.length} Active Warnings
-          </span>
-          <span className="w-1 h-1 rounded-full bg-white/10" />
-          <span className="flex items-center gap-1 text-emerald-500">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            {resolvedAlerts.length} Issues Resolved
-          </span>
-        </div>
-      )}
+      {/* Action Trigger Button */}
+      <div className="p-3 border-b border-outline-variant">
+        <Button
+          onClick={triggerScan}
+          disabled={loading}
+          className="w-full h-9 bg-primary hover:opacity-95 text-on-primary font-mono text-[10px] uppercase tracking-wider rounded-[4px] font-bold transition-all shadow active:scale-[0.98] flex items-center justify-center gap-1.5"
+        >
+          {loading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Terminal className="h-3.5 w-3.5" />
+          )}
+          {loading ? "Scanning Telemetry..." : "Run New Diagnostic"}
+        </Button>
+      </div>
 
-      <AnimatePresence>
-        {expanded && hasScanned && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden mt-6 space-y-4"
-          >
-            {anomalies.length === 0 ? (
-              <div className="text-center py-6 text-sm text-muted-foreground">
-                <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-                No anomalies detected. Database operations are healthy.
+      {/* Alert Filter Tabs */}
+      <div className="flex border-b border-outline-variant font-mono text-[9px] bg-surface-container-lowest shrink-0">
+        <button
+          onClick={() => setActiveTab('new')}
+          className={cn(
+            "flex-1 py-2 text-center relative border-b-2 font-bold transition-all uppercase tracking-wider",
+            activeTab === 'new'
+              ? "text-primary border-primary bg-primary/5"
+              : "text-outline-variant border-transparent hover:text-white"
+          )}
+        >
+          New
+          {newAlerts.length > 0 && (
+            <span className="ml-1.5 px-1 bg-destructive text-destructive-foreground rounded-[2px] text-[8px] font-bold">
+              {newAlerts.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('ongoing')}
+          className={cn(
+            "flex-1 py-2 text-center relative border-b-2 font-bold transition-all uppercase tracking-wider",
+            activeTab === 'ongoing'
+              ? "text-primary border-primary bg-primary/5"
+              : "text-outline-variant border-transparent hover:text-white"
+          )}
+        >
+          Ongoing
+          {ongoingAlerts.length > 0 && (
+            <span className="ml-1.5 px-1 bg-secondary text-secondary-foreground rounded-[2px] text-[8px] font-bold">
+              {ongoingAlerts.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('resolved')}
+          className={cn(
+            "flex-1 py-2 text-center relative border-b-2 font-bold transition-all uppercase tracking-wider",
+            activeTab === 'resolved'
+              ? "text-primary border-primary bg-primary/5"
+              : "text-outline-variant border-transparent hover:text-white"
+          )}
+        >
+          Resolved
+        </button>
+      </div>
+
+      {/* Alerts Feed */}
+      <div className="flex-grow flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
+        {getFilteredAlerts().length === 0 ? (
+          <div className="text-center py-12 text-[10px] text-outline font-mono uppercase tracking-wider space-y-2">
+            <CheckCircle className="h-5 w-5 text-emerald-500 mx-auto opacity-35" />
+            <p>No anomalies in active state</p>
+          </div>
+        ) : (
+          getFilteredAlerts().map((a, idx) => {
+            const isNew = a.state === 'NEW';
+            const isResolved = a.state === 'RESOLVED';
+
+            return (
+              <div
+                key={a.anomaly_key || idx}
+                onClick={() => !isResolved && onSuggestedQueryClick(a.suggested_query)}
+                className={cn(
+                  "p-3 rounded bg-surface-container border border-outline-variant/30 border-l-4 transition-all duration-200 cursor-pointer hover:bg-surface-container-high group flex flex-col gap-1.5",
+                  isResolved
+                    ? "border-emerald-500/80 opacity-60"
+                    : isNew
+                      ? "border-destructive"
+                      : "border-secondary"
+                )}
+              >
+                <div className="flex justify-between items-center">
+                  <span className={cn(
+                    "text-[8px] font-bold px-1.5 py-0.5 rounded-[2px] font-mono uppercase",
+                    isResolved
+                      ? "bg-emerald-500/10 text-emerald-400"
+                      : isNew
+                        ? "bg-destructive/10 text-destructive border border-destructive/20"
+                        : "bg-secondary-container text-on-secondary-container"
+                  )}>
+                    {a.state}
+                  </span>
+                  <span className="font-mono text-[8px] text-outline">
+                    {isResolved ? "Resolved" : isNew ? "2m ago" : `Day ${a.duration.match(/\d+/) || a.duration}`}
+                  </span>
+                </div>
+
+                <h4 className="text-[12px] font-bold text-white group-hover:text-primary transition-colors leading-snug">
+                  {a.metric}
+                </h4>
+
+                <p className="text-[10px] text-on-surface-variant leading-normal line-clamp-2">
+                  {a.description}
+                </p>
+
+                {a.financial_impact_dollars > 0 && (
+                  <div className="flex items-center justify-between border-t border-outline-variant/15 pt-1.5 mt-1 font-mono text-[9px]">
+                    <span className={cn(
+                      "font-bold",
+                      isResolved ? "text-emerald-400" : isNew ? "text-destructive" : "text-on-surface-variant"
+                    )}>
+                      -${a.financial_impact_dollars}.00 impact
+                    </span>
+                    {!isResolved && (
+                      <span className="text-primary hover:underline flex items-center gap-0.5 text-[8px] uppercase tracking-wider font-bold">
+                        Diagnose <Play className="h-2 w-2 fill-current" />
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {anomalies.map((a, idx) => {
-                  const isNew = a.state === 'NEW';
-                  const isResolved = a.state === 'RESOLVED';
-
-                  return (
-                    <motion.div
-                      key={a.anomaly_key || idx}
-                      initial={{ scale: 0.95, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className={cn(
-                        "p-5 rounded-2xl border flex flex-col justify-between transition-all duration-300 relative overflow-hidden backdrop-blur-sm shadow-md",
-                        isResolved
-                          ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-300"
-                          : isNew
-                            ? "bg-destructive/5 border-destructive/20 text-red-300"
-                            : "bg-amber-500/5 border-amber-500/20 text-amber-300"
-                      )}
-                    >
-                      {/* State Badge */}
-                      <div className="flex items-center justify-between mb-3">
-                        <span className={cn(
-                          "text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full border",
-                          isResolved
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                            : isNew
-                              ? "bg-destructive/10 border-destructive/20 text-red-400"
-                              : "bg-amber-500/10 border-amber-500/20 text-amber-400"
-                        )}>
-                          {a.state} {a.duration !== 'new' && a.duration !== 'resolved' && `(Seen for ${a.duration})`}
-                        </span>
-
-                        {a.financial_impact_dollars > 0 && (
-                          <span className={cn(
-                            "text-xs font-bold px-2 py-0.5 rounded-lg border",
-                            isResolved
-                              ? "bg-emerald-500/15 border-emerald-500/25 text-emerald-400"
-                              : isNew
-                                ? "bg-destructive/15 border-destructive/25 text-red-400"
-                                : "bg-amber-500/15 border-amber-500/25 text-amber-400"
-                          )}>
-                            -${a.financial_impact_dollars} Impact
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="space-y-2 mb-4">
-                        <h4 className="font-bold text-white text-sm">{a.metric}</h4>
-                        <p className="text-xs text-foreground/80 leading-relaxed">
-                          {a.description}
-                        </p>
-                      </div>
-
-                      {a.suggested_query && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => onSuggestedQueryClick(a.suggested_query)}
-                          className={cn(
-                            "w-full rounded-xl gap-2 text-xs font-semibold py-4 mt-auto border transition-all duration-300",
-                            isResolved
-                              ? "hover:bg-emerald-500/10 text-emerald-400 border-emerald-500/10 hover:border-emerald-500/20"
-                              : isNew
-                                ? "hover:bg-destructive/10 text-red-400 border-destructive/10 hover:border-destructive/20"
-                                : "hover:bg-amber-500/10 text-amber-400 border-amber-500/10 hover:border-amber-500/20"
-                          )}
-                        >
-                          <Play className="h-3 w-3 fill-current" />
-                          Diagnose with Query
-                        </Button>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-          </motion.div>
+            );
+          })
         )}
-      </AnimatePresence>
-    </Card>
+      </div>
+
+      {/* Bottom Technical Links */}
+      <div className="mt-auto border-t border-outline-variant p-2 space-y-1 bg-surface-container-lowest">
+        <div className="flex items-center gap-2.5 p-2 text-outline-variant hover:text-white rounded hover:bg-white/5 cursor-pointer transition-all">
+          <Terminal className="h-3.5 w-3.5" />
+          <span className="font-mono text-[9px] uppercase tracking-wider">System Health</span>
+        </div>
+        <div className="flex items-center gap-2.5 p-2 text-outline-variant hover:text-white rounded hover:bg-white/5 cursor-pointer transition-all">
+          <HelpCircle className="h-3.5 w-3.5" />
+          <span className="font-mono text-[9px] uppercase tracking-wider">Documentation</span>
+        </div>
+      </div>
+    </aside>
   );
 }

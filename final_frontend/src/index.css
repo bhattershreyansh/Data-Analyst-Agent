@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -36,49 +38,69 @@ All colors MUST be HSL.
     --input: 210 20% 88%;
     --ring: 210 100% 50%;
 
-    --radius: 1rem;
+    --radius: 0.25rem;
 
     --chart-1: 210 100% 50%;
     --chart-2: 186 100% 40%;
     --chart-3: 262 83% 58%;
     --chart-4: 40 95% 55%;
     --chart-5: 340 85% 55%;
+
+    --surface-container-lowest: #040e1f;
+    --surface-container-low: #111c2d;
+    --surface-container: #152031;
+    --surface-container-high: #1f2a3c;
+    --surface-container-highest: #2a3548;
+    --surface-dim: #081425;
+    --surface-bright: #2f3a4c;
+    --outline-variant: #414753;
+    --outline: #8a919f;
   }
 
   .dark {
-    --background: 222 47% 4%;
-    --foreground: 210 20% 98%;
+    --background: 215 64% 9%; /* #081425 */
+    --foreground: 221 81% 92%; /* #d8e3fb */
 
-    --card: 222 47% 6%;
-    --card-foreground: 210 20% 98%;
+    --card: 215 64% 9%; /* #081425 */
+    --card-foreground: 221 81% 92%; /* #d8e3fb */
 
-    --popover: 222 47% 6%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 215 64% 9%; /* #081425 */
+    --popover-foreground: 221 81% 92%; /* #d8e3fb */
 
-    --primary: 262 83% 58%;
-    --primary-foreground: 210 20% 98%;
+    --primary: 212 100% 60%; /* #3291ff - Intelligence Blue */
+    --primary-foreground: 210 100% 17%; /* #002a55 */
 
-    --secondary: 222 47% 10%;
-    --secondary-foreground: 210 20% 98%;
+    --secondary: 227 25% 74%; /* #bec6e0 */
+    --secondary-foreground: 226 19% 30%; /* #3f465c */
 
-    --muted: 222 47% 12%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 216 40% 14%; /* #152031 */
+    --muted-foreground: 223 20% 79%; /* #c0c6d5 */
 
-    --accent: 186 100% 50%;
-    --accent-foreground: 222 47% 4%;
+    --accent: 218 100% 83%; /* #a7c8ff */
+    --accent-foreground: 210 100% 19%; /* #003061 */
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive: 6 100% 84%; /* #ffb4ab */
+    --destructive-foreground: 357 100% 21%; /* #690005 */
 
-    --border: 222 47% 15%;
-    --input: 222 47% 15%;
-    --ring: 262 83% 58%;
+    --border: 220 12% 29%; /* #414753 */
+    --input: 220 12% 29%; /* #414753 */
+    --ring: 212 100% 60%; /* #3291ff */
 
-    --chart-1: 262 83% 58%;
-    --chart-2: 186 100% 50%;
-    --chart-3: 316 70% 50%;
+    --chart-1: 212 100% 60%;
+    --chart-2: 218 100% 83%;
+    --chart-3: 226 35% 81%;
     --chart-4: 142 70% 45%;
     --chart-5: 45 93% 47%;
+
+    --surface-container-lowest: #040e1f;
+    --surface-container-low: #111c2d;
+    --surface-container: #152031;
+    --surface-container-high: #1f2a3c;
+    --surface-container-highest: #2a3548;
+    --surface-dim: #081425;
+    --surface-bright: #2f3a4c;
+    --outline-variant: #414753;
+    --outline: #8a919f;
   }
 }
 
@@ -88,7 +110,7 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground antialiased transition-colors duration-300;
+    @apply bg-background text-foreground antialiased font-sans transition-colors duration-300;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
@@ -136,11 +158,11 @@ All colors MUST be HSL.
 
 /* Global selection override for visibility */
 ::selection {
-  background-color: #8b5cf6 !important;
+  background-color: #3291ff !important;
   color: #ffffff !important;
 }
 
 ::-moz-selection {
-  background-color: #8b5cf6 !important;
+  background-color: #3291ff !important;
   color: #ffffff !important;
 }

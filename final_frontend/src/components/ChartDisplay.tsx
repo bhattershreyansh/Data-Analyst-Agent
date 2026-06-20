@@ -25,7 +25,7 @@ function convertChartConfigToPlotlyData(chartConfig: any, data: any[]): any[] {
     return [];
   }
 
-  const { type, x, y, title } = chartConfig;
+  const { type, x, y, x_axis, y_axis, title } = chartConfig;
 
   if (!type) {
     console.log('Missing chart type');
@@ -33,8 +33,8 @@ function convertChartConfigToPlotlyData(chartConfig: any, data: any[]): any[] {
   }
 
   // If x and y are not specified, try to infer from data
-  let xField = x;
-  let yField = y;
+  let xField = x || x_axis;
+  let yField = y || y_axis;
 
   if (!xField || !yField) {
     const keys = Object.keys(data[0] || {});
@@ -48,9 +48,14 @@ function convertChartConfigToPlotlyData(chartConfig: any, data: any[]): any[] {
     }
   }
 
+  // Find case-insensitive keys
+  const keys = Object.keys(data[0] || {});
+  const actualXKey = keys.find(k => k.toLowerCase() === xField.toLowerCase()) || xField;
+  const actualYKey = keys.find(k => k.toLowerCase() === yField.toLowerCase()) || yField;
+
   // Extract x and y values from data
-  const xValues = data.map(row => row[xField]);
-  const yValues = data.map(row => row[yField]);
+  const xValues = data.map(row => row[actualXKey]);
+  const yValues = data.map(row => row[actualYKey]);
 
   console.log('X values:', xValues);
   console.log('Y values:', yValues);
@@ -83,9 +88,9 @@ function convertChartConfigToPlotlyData(chartConfig: any, data: any[]): any[] {
         y: validYValues,
         type: 'bar',
         marker: {
-          color: '#8b5cf6', // Primary Neon Purple
+          color: '#3291ff', // Intelligence Blue
           line: {
-            color: '#a78bfa', // Lighter purple for glow effect
+            color: '#a7c8ff', // Highlight Blue
             width: 1
           }
         },
@@ -99,7 +104,7 @@ function convertChartConfigToPlotlyData(chartConfig: any, data: any[]): any[] {
         values: validYValues,
         type: 'pie',
         marker: {
-          colors: ['#8b5cf6', '#10b981', '#d946ef', '#0ea5e9', '#f59e0b', '#f43f5e', '#14b8a6'],
+          colors: ['#3291ff', '#10b981', '#a7c8ff', '#b7c8e1', '#8292aa', '#bec6e0', '#3f465c'],
         },
         textinfo: 'label+percent',
         textposition: 'auto',
@@ -114,14 +119,14 @@ function convertChartConfigToPlotlyData(chartConfig: any, data: any[]): any[] {
         type: 'scatter',
         mode: 'lines+markers',
         line: {
-          color: '#10b981', // Accent Neon Emerald
+          color: '#3291ff', // Intelligence Blue
           width: 3,
         },
         marker: {
-          color: '#10b981',
+          color: '#3291ff',
           size: 8,
           line: {
-            color: '#34d399',
+            color: '#a7c8ff',
             width: 2
           }
         },
@@ -302,7 +307,7 @@ export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: Ch
       {result.query && (
         <div className="rounded-2xl glass border-white/5 p-5 relative overflow-hidden group opacity-60 hover:opacity-100 transition-opacity">
           <div className="absolute top-0 left-0 w-1 h-full bg-primary/50" />
-          <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-3">Generated SQL Engine</p>
+          <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-3">Generated SQL Query</p>
           <code className="text-sm font-mono text-white/80 break-all bg-black/20 p-3 rounded-lg block leading-relaxed border border-white/5">
             {result.query}
           </code>
@@ -313,7 +318,7 @@ export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: Ch
       {result.reasoning && !result.insights && (
         <div className="rounded-2xl glass border-white/5 p-6 relative overflow-hidden group">
           <div className="absolute top-0 left-0 w-1 h-full bg-accent/50" />
-          <p className="text-[10px] font-bold text-accent uppercase tracking-widest mb-3">Neural Reasoning Output</p>
+          <p className="text-[10px] font-bold text-accent uppercase tracking-widest mb-3">Query Explanation</p>
           <p className="text-[15px] text-white/80 leading-relaxed font-medium">
             {result.reasoning}
           </p>
@@ -350,7 +355,7 @@ export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: Ch
           <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
           </div>
-          <div className="w-full" style={{ minHeight: '450px' }}>
+          <div className="w-full h-[400px] relative">
             <Plot
               data={chartData}
               layout={layout}
@@ -360,7 +365,7 @@ export function ChartDisplay({ result, onSave, onDelete, onSuggestionClick }: Ch
                 displaylogo: false,
                 modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
               }}
-              style={{ width: '100%', height: '450px' }}
+              style={{ width: '100%', height: '100%' }}
               useResizeHandler
             />
           </div>

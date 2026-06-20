@@ -1,10 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
-import { dashboardAPI, Dashboard } from '@/lib/api';
-import { Card } from '@/components/ui/card';
+import { dashboardAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Eye, Loader2, LayoutDashboard, PlusCircle } from 'lucide-react';
+import { Trash2, Eye, Loader2, LayoutDashboard, PlusCircle, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
@@ -53,34 +52,37 @@ export default function Dashboards() {
   });
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-surface-dim text-on-background relative overflow-hidden flex flex-col pb-16 font-sans">
+      {/* Background decoration grid lines */}
+      <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: "linear-gradient(to right, #8a919f 1px, transparent 1px), linear-gradient(to bottom, #8a919f 1px, transparent 1px)", backgroundSize: "32px 32px" }}></div>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[400px] bg-gradient-to-b from-primary/5 via-transparent to-transparent blur-[100px] pointer-events-none" />
       
       <Header />
       
-      <div className="container mx-auto px-6 py-12 relative z-10 max-w-7xl">
+      <div className="container mx-auto px-6 py-12 relative z-10 max-w-6xl flex-grow">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-12 flex flex-wrap items-end justify-between gap-6"
+          className="mb-10 flex flex-wrap items-end justify-between gap-6 pb-6 border-b border-outline-variant/30"
         >
           <div>
-            <h1 className="text-5xl font-black text-white mb-3 tracking-tighter">
-              Operational <span className="text-neon">Dashboards</span>
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-[2px] bg-primary/10 border border-primary/25 text-primary text-[10px] font-mono uppercase tracking-wider mb-2">
+              Dashboards
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white uppercase tracking-tight font-sans">
+              Operational Dashboards
             </h1>
-            <p className="text-lg text-muted-foreground/80 font-medium">
-              Monitor your business pulse with AI-curated intelligence hubs.
+            <p className="text-xs text-on-surface-variant leading-relaxed mt-1">
+              Monitor your e-commerce operations with automated dashboards.
             </p>
           </div>
           <Button 
             onClick={() => setCreateOpen(true)}
-            size="lg" 
-            className="rounded-2xl h-14 px-8 font-bold bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 gap-2"
+            size="sm" 
+            className="h-10 rounded-[4px] px-5 font-mono text-[10px] uppercase tracking-wider font-bold bg-primary hover:opacity-95 text-on-primary transition-all gap-2"
           >
-            <PlusCircle className="h-5 w-5" />
-            Create Intelligence Hub
+            <PlusCircle className="h-4 w-4" />
+            Create Dashboard
           </Button>
         </motion.div>
 
@@ -91,83 +93,83 @@ export default function Dashboards() {
         />
 
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-32 space-y-4">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-primary font-bold animate-pulse uppercase tracking-widest text-xs">Deciphering Architectures</p>
+          <div className="flex flex-col items-center justify-center py-24 space-y-4">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-outline font-mono text-[10px] uppercase tracking-widest animate-pulse">Syncing Dashboard Directory...</p>
           </div>
         ) : error ? (
-          <div className="text-center py-20 glass-card rounded-3xl border-destructive/20 max-w-2xl mx-auto">
-            <div className="text-destructive text-xl font-bold mb-3 uppercase tracking-tight">
-              Neural Link Interrupted
+          <div className="text-center py-16 bg-surface-container-low border border-outline-variant rounded-lg max-w-2xl mx-auto">
+            <div className="text-destructive font-mono text-xs font-bold mb-2 uppercase tracking-wider">
+              Connection Interrupted
             </div>
-            <p className="text-muted-foreground">
-              {error.message || 'An error occurred while loading high-level intelligence.'}
+            <p className="text-xs text-on-surface-variant font-mono">
+              {error.message || 'An error occurred while loading dashboards.'}
             </p>
           </div>
         ) : !dashboards || dashboards.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-32 glass-card rounded-[3rem] border-white/5 space-y-8 max-w-3xl mx-auto"
+            className="text-center py-20 bg-surface-container border border-outline-variant rounded-lg space-y-6 max-w-2xl mx-auto"
           >
-            <div className="flex justify-center opacity-30 mb-6"><LayoutDashboard className="h-24 w-24 text-muted-foreground" /></div>
-            <div className="space-y-2">
-              <h2 className="text-3xl font-black text-white">Tabula Rasa</h2>
-              <p className="text-muted-foreground/80 max-w-md mx-auto text-lg leading-relaxed">
-                Your intelligence center is currently empty. Start analyzing data to composite your first dashboard.
+            <div className="flex justify-center opacity-25">
+              <LayoutDashboard className="h-16 w-16 text-outline" />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className="text-md font-bold text-white uppercase tracking-wider">No Dashboards Found</h2>
+              <p className="text-xs text-on-surface-variant max-w-md mx-auto leading-relaxed">
+                Your dashboard center is currently empty. Start analyzing data to compile your first dashboard.
               </p>
             </div>
-            <Link to="/">
-              <Button size="lg" className="rounded-full px-10 h-14 text-lg font-bold bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
-                Initialize Analytics
+            <Link to="/analytics">
+              <Button size="sm" className="rounded-[4px] px-6 h-9 font-mono text-[10px] uppercase tracking-wider font-bold bg-primary hover:opacity-95 text-on-primary">
+                Launch Workspace
               </Button>
             </Link>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {dashboards.map((dashboard, index) => (
               <motion.div
                 key={dashboard.dashboard_id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.05 }}
               >
-                <div className="glass-card p-8 rounded-[2.5rem] hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden border-white/5 shadow-xl">
-                  {/* Subtle hover accent */}
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  
-                  <div className="flex items-start gap-5 mb-8">
-                    <div className="p-4 rounded-2xl bg-primary/10 neon-glow border border-primary/20 group-hover:scale-110 transition-transform duration-300">
-                      <LayoutDashboard className="h-7 w-7 text-primary" />
+                <div className="bg-surface-container border border-outline-variant p-6 rounded-lg hover:border-primary/50 transition-all group relative flex flex-col min-h-[220px]">
+                  <div className="flex items-start gap-4 mb-5">
+                    <div className="p-2.5 rounded bg-primary/10 border border-primary/20 text-primary shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      <LayoutDashboard className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-black text-xl text-white mb-2 truncate group-hover:text-primary transition-colors">
+                      <h3 className="font-bold text-sm text-white mb-1 truncate uppercase group-hover:text-primary transition-colors font-sans">
                         {dashboard.name}
                       </h3>
                       {dashboard.description ? (
-                        <p className="text-sm text-muted-foreground/80 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
                           {dashboard.description}
                         </p>
                       ) : (
-                        <p className="text-sm text-muted-foreground/40 italic">No description provided</p>
+                        <p className="text-xs text-outline-variant italic">No description provided</p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/5">
-                    <Badge variant="secondary" className="glass border-white/10 text-primary font-bold px-3 py-1">
-                      {dashboard.total_charts} Modules
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-outline-variant/15 mb-4">
+                    <Badge variant="secondary" className="bg-surface-container-high border border-outline-variant/40 text-primary font-mono text-[9px] uppercase tracking-wider rounded-[2px] px-2 py-0.5">
+                      {dashboard.total_charts} Charts
                     </Badge>
-                    <span className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-widest">
+                    <span className="text-[9px] text-outline font-mono flex items-center gap-1.5">
+                      <Calendar className="h-3 w-3 text-outline-variant" />
                       {formatDistanceToNow(new Date(dashboard.created_at), { addSuffix: true })}
                     </span>
                   </div>
 
-                  <div className="flex gap-3">
-                    <Link to={`/dashboard/${dashboard.dashboard_id}`} className="flex-1 group/btn">
-                      <Button variant="default" className="w-full h-12 rounded-2xl font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 group-hover/btn:scale-[1.02] transition-all">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Access Intelligence
+                  <div className="flex gap-2">
+                    <Link to={`/dashboard/${dashboard.dashboard_id}`} className="flex-grow">
+                      <Button variant="default" className="w-full h-9 rounded-[4px] font-mono text-[10px] uppercase tracking-wider font-bold bg-primary hover:opacity-95 text-on-primary transition-all">
+                        <Eye className="h-3.5 w-3.5 mr-1.5" />
+                        View Dashboard
                       </Button>
                     </Link>
                     <Button
@@ -175,9 +177,9 @@ export default function Dashboards() {
                       size="icon"
                       onClick={() => deleteMutation.mutate(dashboard.dashboard_id)}
                       disabled={deleteMutation.isPending}
-                      className="h-12 w-12 rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      className="h-9 w-9 rounded-[4px] text-outline-variant hover:text-destructive hover:bg-destructive/10 border border-transparent hover:border-destructive/20 transition-colors shrink-0"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>

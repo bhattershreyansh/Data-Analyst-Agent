@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../lib/api';
-import { UserPlus, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Terminal, KeyRound } from 'lucide-react';
 
 export const Register: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -45,7 +45,7 @@ export const Register: React.FC = () => {
       }
 
       login(data.access_token);
-      navigate('/');
+      navigate('/analytics');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -54,100 +54,131 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center text-indigo-600">
-          <UserPlus className="h-12 w-12" />
+    <div className="min-h-screen bg-surface-dim text-on-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+      {/* Background decoration grid lines */}
+      <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: "linear-gradient(to right, #8a919f 1px, transparent 1px), linear-gradient(to bottom, #8a919f 1px, transparent 1px)", backgroundSize: "32px 32px" }}></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 text-center space-y-3">
+        <div className="flex justify-center">
+          <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+            <Terminal className="h-5 w-5 animate-pulse text-primary" />
+          </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Create an account
-        </h2>
+        <div>
+          <h2 className="text-xl font-bold text-white uppercase tracking-tight leading-none">
+            DATA ANALYST AGENT
+          </h2>
+          <p className="mt-1.5 text-[9px] font-mono uppercase tracking-[0.25em] text-outline">
+            Create Analyst Account
+          </p>
+        </div>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4">
+        <div className="bg-surface-container-low border border-outline-variant py-8 px-6 shadow-xl rounded sm:px-10">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-                {error}
+              <div className="bg-error-container/10 border border-error/20 text-error p-3 rounded-sm text-[11px] font-mono flex items-start gap-2.5">
+                <Terminal className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>ERR::REG_FAILED: {error}</span>
               </div>
             )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email address</label>
-              <div className="mt-1">
+            
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-outline">
+                Email Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline-variant">
+                  <Terminal className="h-3.5 w-3.5" />
+                </div>
                 <input
                   type="email"
                   required
+                  placeholder="admin@platform.io"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white text-gray-900"
+                  className="block w-full pl-9 pr-3 py-2 bg-surface-dim border border-outline-variant rounded-[4px] text-on-background placeholder-outline/30 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-mono"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <div className="mt-1 relative">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-outline">
+                Choose Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline-variant">
+                  <KeyRound className="h-3.5 w-3.5" />
+                </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
+                  placeholder="Minimum 6 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white text-gray-900"
+                  className="block w-full pl-9 pr-10 py-2 bg-surface-dim border border-outline-variant rounded-[4px] text-on-background placeholder-outline/30 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-outline-variant hover:text-on-background focus:outline-none"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
+                    <EyeOff className="h-3.5 w-3.5" />
                   ) : (
-                    <Eye className="h-5 w-5" />
+                    <Eye className="h-3.5 w-3.5" />
                   )}
                 </button>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
-              <div className="mt-1 relative">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-outline">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline-variant">
+                  <KeyRound className="h-3.5 w-3.5" />
+                </div>
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   required
+                  placeholder="Confirm password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white text-gray-900"
+                  className="block w-full pl-9 pr-10 py-2 bg-surface-dim border border-outline-variant rounded-[4px] text-on-background placeholder-outline/30 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-outline-variant hover:text-on-background focus:outline-none"
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className="h-5 w-5" />
+                    <EyeOff className="h-3.5 w-3.5" />
                   ) : (
-                    <Eye className="h-5 w-5" />
+                    <Eye className="h-3.5 w-3.5" />
                   )}
                 </button>
               </div>
             </div>
 
-            <div>
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                className="w-full flex justify-center items-center py-2 px-4 rounded-[4px] font-mono text-[10px] uppercase tracking-wider text-on-primary bg-primary hover:opacity-95 font-bold focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 transition-all active:scale-[0.98] cursor-pointer"
               >
-                {loading ? 'Creating account...' : 'Create account'}
+                {loading ? 'Creating Account...' : 'Sign Up'}
               </button>
             </div>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
+          <div className="mt-5 text-center text-[11px] font-mono text-outline">
             Already have an account?{' '}
-            <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Sign in
+            <Link to="/login" className="font-bold text-primary hover:underline transition-all">
+              Sign In
             </Link>
           </div>
         </div>

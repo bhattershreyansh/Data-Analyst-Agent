@@ -119,6 +119,8 @@ async def get_current_user(res: Optional[HTTPAuthorizationCredentials] = Depends
     if demo_mode and (not res or res.credentials in ("mock-token", "test-token", "demo-token")):
         # Local development / test fallback — only allowed when DEMO_MODE=true
         return {"user_id": "demo-user-id"}
+    if not res:
+        raise HTTPException(status_code=401, detail="Not authenticated")
         
     token = res.credentials
     try:

@@ -106,6 +106,7 @@ export interface SavedChart {
   x_axis?: string;
   y_axis?: string;
   timestamp: string;
+  insight?: string;
 }
 
 export interface Dashboard {

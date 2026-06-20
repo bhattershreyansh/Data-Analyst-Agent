@@ -8,6 +8,7 @@ import Analytics from "./pages/Analytics";
 import Dashboards from "./pages/Dashboards";
 import DashboardView from "./pages/DashboardView";
 import SchemaBlueprint from "./pages/SchemaBlueprint";
+import ForensicsMonitor from "./pages/ForensicsMonitor";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -44,13 +45,14 @@ const App = () => (
         <Toaster />
         <Sonner position="top-right" />
         <BrowserRouter>
-          <div className="min-h-screen flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
+          <div className="min-h-screen flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background pb-9">
             <main className="flex-grow">
               <Routes>
                 <Route path="/" element={<HomeOrRedirect />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                <Route path="/forensics" element={<ProtectedRoute><ForensicsMonitor /></ProtectedRoute>} />
                 <Route path="/dashboards" element={<ProtectedRoute><Dashboards /></ProtectedRoute>} />
                 <Route path="/dashboard/:id" element={<ProtectedRoute><DashboardView /></ProtectedRoute>} />
                 <Route path="/blueprint" element={<ProtectedRoute><SchemaBlueprint /></ProtectedRoute>} />

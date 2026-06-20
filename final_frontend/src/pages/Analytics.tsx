@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, useUser } from '@/context/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatInterface, Message } from '@/components/ChatInterface';
@@ -6,11 +7,11 @@ import { AnomalyAlertCenter } from '@/components/AnomalyAlertCenter';
 import { ChartDisplay } from '@/components/ChartDisplay';
 import { SavedChartsSidebar } from '@/components/SavedChartsSidebar';
 import { CreateDashboardDialog } from '@/components/CreateDashboardDialog';
-import { SmartQuestions } from '@/components/SmartQuestions';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { QueryResponse, SavedChart, queryAPI, modeAPI } from '@/lib/api';
-import { PlusCircle, Sparkles, Loader2, Database, LayoutDashboard } from 'lucide-react';
+import { QueryResponse, SavedChart, queryAPI, modeAPI, dataSourcesAPI } from '@/lib/api';
+import { PlusCircle, Sparkles, Loader2, Database, LayoutDashboard, BarChart3, Activity } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
@@ -19,6 +20,8 @@ import { Header } from '@/components/Header';
 export default function Analytics() {
   const { getToken } = useAuth();
   const { user } = useUser();
+  const location = useLocation();
+  const navigate = useNavigate();
   const userId = user?.user_id;
   const [queryMessages, setQueryMessages] = useState<Message[]>([]);
   const [diagnosticsMessages, setDiagnosticsMessages] = useState<Message[]>([]);
@@ -34,6 +37,32 @@ export default function Analytics() {
   const [createDashboardOpen, setCreateDashboardOpen] = useState(false);
   const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const [activeSourceName, setActiveSourceName] = useState<string>("");
+  const [smartQuestions, setSmartQuestions] = useState<string[]>([]);
+  const [smartQuestionsLoading, setSmartQuestionsLoading] = useState(false);
+
+  // Fetch smart questions when active source changes
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      if (!activeSourceId) {
+        setSmartQuestions([]);
+        return;
+      }
+      setSmartQuestionsLoading(true);
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const response = await dataSourcesAPI.getSmartQuestions(activeSourceId, token, false);
+        if (response.success && response.data?.questions) {
+          setSmartQuestions(response.data.questions.map((q: any) => q.question));
+        }
+      } catch (error) {
+        console.error("Failed to fetch smart questions:", error);
+      } finally {
+        setSmartQuestionsLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, [activeSourceId]);
 
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupLoading, setPopupLoading] = useState(false);
@@ -74,6 +103,32 @@ export default function Analytics() {
       return () => clearInterval(interval);
     }
   }, [userId]);
+
+  // Handle auto-run query redirected from Forensics Monitor
+  useEffect(() => {
+    const autoQuery = localStorage.getItem('auto_run_query');
+    if (autoQuery && activeSourceId) {
+      localStorage.removeItem('auto_run_query');
+      handleSendMessage(autoQuery, 'query');
+    }
+  }, [activeSourceId]);
+
+  // Handle auto-run query from URL param (e.g. Dashboard Re-run)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const urlQuery = searchParams.get('q');
+    
+    if (urlQuery && activeSourceId) {
+      // Clear the param so it doesn't re-run if they refresh
+      navigate('/analytics', { replace: true });
+      
+      // Give the layout a tiny moment to render before firing the query
+      setTimeout(() => {
+        setChatMode('query');
+        handleSendMessage(urlQuery, 'query');
+      }, 100);
+    }
+  }, [location.search, activeSourceId, navigate]);
 
   const handleSendMessage = async (text: string, mode: 'query' | 'diagnose' = 'query') => {
     // Add user message
@@ -131,7 +186,8 @@ export default function Analytics() {
       } else {
         const response = await queryAPI.sendQuery({
           question: text,
-          limit: 10
+          limit: 10,
+          generate_insights: true
         }, token);
 
         if (response.data.success) {
@@ -236,7 +292,14 @@ export default function Analytics() {
       const response = await queryAPI.deleteSavedChart(chartId, token);
       if (response.success) {
         toast.success("Chart unsaved");
-        queryClient.invalidateQueries({ queryKey: ['saved-charts'] });
+        queryClient.invalidateQueries({ queryKey: ['saved-charts', userId] });
+        
+        // Update the message history to clear saved status
+        setQueryMessages(prev => prev.map(msg =>
+          msg.result?.chart_id === chartId
+            ? { ...msg, result: { ...msg.result, chart_id: undefined } }
+            : msg
+        ));
       } else {
         toast.error("Failed to remove chart");
       }
@@ -283,7 +346,7 @@ export default function Analytics() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+    <div className="h-[calc(100vh-36px)] bg-background text-foreground relative overflow-hidden flex flex-col">
       {/* Background Glows */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
@@ -296,8 +359,8 @@ export default function Analytics() {
               variant="ghost"
               size="sm"
               onClick={handleClearHistory}
-          disabled={messages.length === 0}
-              className="text-muted-foreground hover:text-destructive"
+              disabled={messages.length === 0}
+              className="text-muted-foreground hover:text-destructive font-mono text-[10px] uppercase tracking-wider"
             >
               Clear History
             </Button>
@@ -305,52 +368,72 @@ export default function Analytics() {
               variant="outline"
               size="sm"
               onClick={() => setSidebarOpen(true)}
-              className="gap-2 hidden sm:flex"
+              className="gap-2 hidden sm:flex font-mono text-[10px] uppercase tracking-wider border-outline-variant hover:bg-white/5"
             >
-              <LayoutDashboard className="h-4 w-4" />
+              <LayoutDashboard className="h-4 w-4 text-primary" />
               Saved Charts
             </Button>
           </div>
         }
       />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8">
-        {/* Smart Questions Suggestions */}
-        <SmartQuestions
-          sourceId={activeSourceId}
-          sourceName={activeSourceName}
-          onQuestionClick={handleQuestionClick}
-        />
+      <div className="flex flex-1 h-[calc(100vh-64px-36px)] overflow-hidden relative">
+        {/* Main Workspace Viewport */}
+        <main className="flex-1 flex flex-col bg-background relative overflow-hidden h-full min-h-0">
+          {/* Sub-Navigation (Tabs) */}
+          <div className="px-6 h-14 border-b border-outline-variant flex items-center gap-8 bg-surface-container-lowest shrink-0 font-sans">
+            <button
+              onClick={() => handleChatModeChange('query')}
+              className={cn(
+                "h-full border-b-2 px-1 text-xs font-sans font-bold uppercase tracking-widest flex items-center gap-2 transition-all",
+                chatMode === 'query'
+                  ? "text-primary border-primary"
+                  : "text-on-surface-variant hover:text-white border-transparent"
+              )}
+            >
+              <BarChart3 className="h-4 w-4" />
+              Query & Charts
+            </button>
+            <button
+              onClick={() => handleChatModeChange('diagnose')}
+              className={cn(
+                "h-full border-b-2 px-1 text-xs font-sans font-bold uppercase tracking-widest flex items-center gap-2 transition-all",
+                chatMode === 'diagnose'
+                  ? "text-primary border-primary"
+                  : "text-on-surface-variant hover:text-white border-transparent"
+              )}
+            >
+              <Activity className="h-4 w-4" />
+              Deep Diagnostics
+            </button>
+          </div>
 
-        {/* Proactive Anomaly Alert Center */}
-        <AnomalyAlertCenter
-          sourceId={activeSourceId}
-          onSuggestedQueryClick={handleSendMessage}
-        />
-
-        {/* Main Chat Interface */}
-        <div className="grid gap-6">
-        <ChatInterface
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
-            onSaveChart={handleSaveChart}
-            onDeleteChart={handleDeleteChart}
-            onSuggestionClick={handleSendMessage}
-            chatMode={chatMode}
-            onChatModeChange={handleChatModeChange}
-          />
-        </div>
+          {/* Main Content Area */}
+          <div className="flex-grow flex flex-col overflow-hidden relative min-h-0">
+            <ChatInterface
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              isLoading={isLoading}
+              onSaveChart={handleSaveChart}
+              onDeleteChart={handleDeleteChart}
+              onSuggestionClick={handleSendMessage}
+              chatMode={chatMode}
+              onChatModeChange={handleChatModeChange}
+              suggestions={smartQuestions}
+              suggestionsLoading={smartQuestionsLoading}
+            />
+          </div>
+        </main>
 
         {selectedCharts.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="fixed bottom-8 right-8 z-20"
+            className="fixed bottom-12 right-8 z-20"
           >
             <Button
               onClick={() => setCreateDashboardOpen(true)}
-              className="shadow-xl gap-2 rounded-full py-6 px-8"
+              className="shadow-xl gap-2 rounded-full py-6 px-8 bg-primary hover:bg-primary/90 text-on-primary font-bold font-mono text-xs uppercase tracking-wider"
               size="lg"
             >
               <PlusCircle className="h-5 w-5" />
@@ -366,6 +449,13 @@ export default function Analytics() {
         onChartSelect={handleChartSelect}
         selectedCharts={selectedCharts}
         onChartToggle={handleChartToggle}
+        onChartDeleted={(chartId) => {
+          setQueryMessages(prev => prev.map(msg =>
+            msg.result?.chart_id === chartId
+              ? { ...msg, result: { ...msg.result, chart_id: undefined } }
+              : msg
+          ));
+        }}
       />
 
       <CreateDashboardDialog
