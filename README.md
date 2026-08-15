@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="final_frontend/public/Futuristic%20Lumina%20AI%20logo%20design.png" width="180" alt="Data Analyst Agent Logo" />
   <h1>Data Analyst Agent · Private Intelligence Platform</h1>
   <p><b>A dual-mode analytics engine — natural language querying meets autonomous forensic root cause analysis.</b></p>
 </div>
+
 
 ---
 

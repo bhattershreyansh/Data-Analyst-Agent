@@ -6,7 +6,7 @@ class QueryRequest(BaseModel):
     question: str = Field(..., min_length=3, max_length=500, description="Natural language question")
     limit: Optional[int] = Field(default=20, ge=1, le=100, description="Maximum rows to return")
     chart_type: Optional[str] = Field(default=None, description="Override chart type")
-    generate_insights: Optional[bool] = Field(default=False, description="Run Lumina Insight Engine")
+    generate_insights: Optional[bool] = Field(default=False, description="Run Insight Engine")
     
     @field_validator('question')
     @classmethod
